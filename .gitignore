@@ -1,0 +1,9 @@
+node_modules
+.astro
+dist
+.env
+.env.local
+.env.development
+.env.production
+bun.lock
+legacy_backup
