@@ -2,8 +2,8 @@ import type { APIRoute } from 'astro';
 import { READING_CONFIG } from '../../data/reading-prompts';
 
 const KEYS = [
-    import.meta.env.GEMINI_API_KEY,
-    import.meta.env.GEMINI_API_KEY_BACKUP
+    process.env.GEMINI_API_KEY,
+    process.env.GEMINI_API_KEY_BACKUP
 ].filter(Boolean);
 
 const BASE_URLS = [
@@ -21,7 +21,7 @@ const MODELS = [
     'deepseek/deepseek-chat', // OpenRouter DB
 ];
 
-const OPENROUTER_KEY = import.meta.env.OPENROUTER_API_KEY;
+const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
 if (OPENROUTER_KEY) {
     KEYS.push(OPENROUTER_KEY);
     BASE_URLS.push('https://openrouter.ai/api/v1/chat/completions');
