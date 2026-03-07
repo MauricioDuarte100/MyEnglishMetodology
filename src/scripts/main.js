@@ -46,6 +46,7 @@ const matchingState = {
 // ===== Timer State =====
 let flashcardTimerInterval = null;
 let flashcardTimeRemaining = 0;
+let autoPlayInterval = null;
 
 // ===== Initialization =====
 function init() {
@@ -57,6 +58,7 @@ function init() {
         flashcardMode: document.getElementById('flashcardMode'),
         quizMode: document.getElementById('quizMode'),
         typingMode: document.getElementById('typingMode'),
+        typingDefinition: document.getElementById('typingDefinition'),
         flashcard: document.getElementById('flashcard'),
         currentWord: document.getElementById('currentWord'),
         wordTop: document.getElementById('wordTop'),
@@ -96,7 +98,9 @@ function init() {
         flashcardTotalCount: document.getElementById('flashcardTotalCount'),
         timerSelect: document.getElementById('timerSelect'),
         timerDisplay: document.getElementById('timerDisplay'),
-        startTimerBtn: document.getElementById('startTimerBtn')
+        startTimerBtn: document.getElementById('startTimerBtn'),
+        autoPlayFlashcardsBtn: document.getElementById('autoPlayFlashcardsBtn'),
+        typingListenBtn: document.getElementById('typingListenBtn')
     };
 
     readingElements = {
@@ -200,15 +204,21 @@ function doSpeak(text, voices) {
     const utterance = new SpeechSynthesisUtterance(text);
     const targetLang = state.currentLanguage === 'ru' ? 'ru' : 'en';
 
+    utterance.lang = targetLang === 'ru' ? 'ru-RU' : 'en-US';
+
     // Find best voice
-    let voice = voices.find(v => v.lang.startsWith(targetLang) && v.name.includes('Google'));
-    if (!voice) voice = voices.find(v => v.lang.startsWith(targetLang));
+    let voice;
+    if (targetLang === 'ru') {
+        voice = voices.find(v => v.lang.toLowerCase().startsWith('ru') && v.name.includes('Google'));
+        if (!voice) voice = voices.find(v => v.lang.toLowerCase().startsWith('ru'));
+    } else {
+        voice = voices.find(v => v.lang.toLowerCase().startsWith('en') && v.name.includes('Google'));
+        if (!voice) voice = voices.find(v => v.lang.toLowerCase().includes('en-us') || v.lang.toLowerCase().includes('en-gb'));
+        if (!voice) voice = voices.find(v => v.lang.toLowerCase().startsWith('en'));
+    }
 
     if (voice) {
         utterance.voice = voice;
-        utterance.lang = voice.lang;
-    } else {
-        utterance.lang = targetLang === 'ru' ? 'ru-RU' : 'en-US';
     }
 
     utterance.rate = 0.8;
@@ -437,6 +447,15 @@ function setupEventListeners() {
     if (elements.startTimerBtn) {
         elements.startTimerBtn.addEventListener('click', toggleFlashcardTimer);
     }
+    if (elements.autoPlayFlashcardsBtn) {
+        elements.autoPlayFlashcardsBtn.addEventListener('click', toggleAutoPlay);
+    }
+    if (elements.typingListenBtn) {
+        elements.typingListenBtn.addEventListener('click', () => {
+            const word = state.currentWords[state.currentIndex];
+            if (word) speakText(word.example);
+        });
+    }
 
     // Quiz interactions
     if (elements.quizOptions) {
@@ -552,6 +571,7 @@ function resetMode() {
     state.isFlipped = false;
     state.quizScore = 0;
     state.quizTotal = 0;
+    if (autoPlayInterval) toggleAutoPlay();
     if (elements.flashcard) elements.flashcard.classList.remove('flipped');
     if (elements.quizFeedback) elements.quizFeedback.classList.add('hidden');
     if (elements.typingFeedback) elements.typingFeedback.classList.add('hidden');
@@ -562,26 +582,33 @@ function resetMode() {
 // ===== Word Progress =====
 function markWord(status) {
     const word = state.currentWords[state.currentIndex];
+    if (!word) return;
     const key = `${state.currentCategory}:${word.word}`;
     state.progress[key] = status;
     saveProgress();
 
-    if (state.currentIndex < state.currentWords.length - 1) {
-        state.currentIndex++;
+    if (state.currentMode === 'flashcard') {
+        if (state.currentIndex < state.currentWords.length - 1) {
+            state.currentIndex++;
+        }
+        state.isFlipped = false;
+
+        // Visual Feedback for Saving
+        const btn = status === 'mastered' ? elements.knowBtn : elements.learningBtn;
+        if (btn) {
+            const originalText = btn.textContent;
+            btn.textContent = "¡Guardado!";
+            btn.classList.add('saved-anim');
+
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.classList.remove('saved-anim');
+                updateDisplay();
+            }, 600);
+        } else {
+            updateDisplay();
+        }
     }
-    state.isFlipped = false;
-
-    // Visual Feedback for Saving
-    const btn = status === 'mastered' ? elements.knowBtn : elements.learningBtn;
-    const originalText = btn.textContent;
-    btn.textContent = "¡Guardado!";
-    btn.classList.add('saved-anim');
-
-    setTimeout(() => {
-        btn.textContent = originalText;
-        btn.classList.remove('saved-anim');
-        updateDisplay();
-    }, 600);
 }
 
 // Helper to show progress help logic
@@ -648,6 +675,36 @@ function updateDisplay() {
 }
 
 // Timer Logic
+function toggleAutoPlay() {
+    if (!elements.autoPlayFlashcardsBtn) return;
+    if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+        elements.autoPlayFlashcardsBtn.textContent = '⏱️ Test Rápido (3s)';
+        elements.autoPlayFlashcardsBtn.classList.remove('active');
+    } else {
+        elements.autoPlayFlashcardsBtn.textContent = '⏹️ Detener Test';
+        elements.autoPlayFlashcardsBtn.classList.add('active');
+
+        const cycle = () => {
+            if (state.currentIndex >= state.currentWords.length - 1 && state.isFlipped) {
+                toggleAutoPlay();
+                return;
+            }
+            if (!state.isFlipped) {
+                elements.flashcard.click();
+                if (document.getElementById('flashcardAudioBtn')) {
+                    const word = state.currentWords[state.currentIndex];
+                    if (word && state.currentMode === 'flashcard') speakText(word.word);
+                }
+            } else {
+                elements.nextBtn.click();
+            }
+        };
+        autoPlayInterval = setInterval(cycle, 1500);
+    }
+}
+
 function toggleFlashcardTimer() {
     if (flashcardTimerInterval) {
         stopFlashcardTimer();
@@ -864,6 +921,10 @@ function checkTypingAnswer() {
         feedbackText.textContent = `¡Correcto! La palabra es "${word.word}"`;
         feedbackText.className = 'feedback-text correct';
         markWord('mastered');
+
+        elements.typingExample.textContent = '"' + word.example + '"';
+        speakText(word.example);
+        setTimeout(() => { elements.nextWordBtn.click(); }, 3000);
     } else {
         feedbackText.textContent = `Incorrecto. Sigues intentándolo o presiona 'Pista'.`;
         feedbackText.className = 'feedback-text incorrect';

@@ -149,6 +149,9 @@ import '../styles/global.css';
             </svg>
           </button>
         </div>
+        <div style="text-align: center; margin-top: 15px;">
+          <button class="action-btn" id="autoPlayFlashcardsBtn" style="padding: 0.5rem 1.5rem; border-radius: 99px; background: rgba(0,0,0,0.5);">⏱️ Test Rápido (3s)</button>
+        </div>
       </section>
 
       <!-- Quiz Mode -->
@@ -205,8 +208,9 @@ import '../styles/global.css';
           <input type="text" class="typing-input" id="typingInput" placeholder="Escribe la palabra..." autocomplete="off">
           <button class="typing-submit" id="typingSubmit">Comprobar</button>
         </div>
-        <div class="typing-actions" style="margin-top: 10px;">
+        <div class="typing-actions" style="margin-top: 10px; display: flex; gap: 10px; justify-content: center;">
            <button class="action-btn" id="typingHintBtn">💡 Dar una Pista</button>
+           <button class="action-btn" id="typingListenBtn">🔊 Escuchar Oración</button>
         </div>
         <div class="typing-feedback hidden" id="typingFeedback">
           <span class="feedback-text"></span>
