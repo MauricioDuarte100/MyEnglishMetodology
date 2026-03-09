@@ -60,16 +60,16 @@ export const POST: APIRoute = async ({ request }) => {
             } else {
                 prompt = `Genera un diálogo simulando preguntas y respuestas detalladas en inglés (nivel ${level}) sobre el tema: "${topic || 'General'}".
         CRÍTICO: El diálogo debe ser extenso, con **8 a 12 intercambios** de ida y vuelta. Cada intervención debe ser **larga y detallada**, idealmente de 2 a 4 oraciones completas por turno, evitando respuestas y preguntas de una sola línea.
-        CRÍTICO: NO uses el alfabeto fonético internacional (IPA). Para la fonética, debes escribir cómo se pronunciaría leyéndolo en ESPAÑOL (ejemplo: "believe" = "biliv", "hello how are you" = "jelou jau ar iu").
+        CRÍTICO: NO uses el alfabeto fonético internacional (IPA). Para la fonética, debes escribir cómo se pronunciaría leyéndolo en ESPAÑOL, pero **simulando un acento americano urbano muy marcado (tipo Nueva York, Bronx, Chicago, rap/trap flow)**. Usa abreviaciones comunes del rap y la calle como 'gonna' (góna), 'wanna' (wána), 'ain't' (eint), omite la 'g' final en gerundios (ej: chillin = chílin), y conecta las palabras fluidamente (ejemplo: "What are you going to do" = "wára iu góna du", "believe" = "biliv").
         Devuelve ÚNICAMENTE un objeto JSON con esta estructura exacta, sin texto adicional:
         {
             "title": "Título en Inglés (Traducción al Español)",
             "segments": [
                 {
                     "speaker": "Personaje 1",
-                    "english": "Hello, how are you preparing for the interview?",
-                    "phonetic": "jelou, jau ar iu priperin for de interviu?",
-                    "spanish": "Hola, ¿cómo te preparás para la entrevista?"
+                    "english": "Yo, what are you doing? I ain't got time.",
+                    "phonetic": "iou, wára iu dú-in? ai eint gat taim.",
+                    "spanish": "Oye, ¿qué estás haciendo? No tengo tiempo."
                 }
             ],
             "difficultWords": [

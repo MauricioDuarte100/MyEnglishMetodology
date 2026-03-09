@@ -4,6 +4,8 @@ import { TECHNICAL_VOCABULARY } from '../data/technical.js';
 import { RUSSIAN_CORE } from '../data/russian-core.js';
 import { RUSSIAN_B1_TRAVEL, RUSSIAN_B1_TECH, RUSSIAN_B1_WORK } from '../data/russian-b1-intensive.js';
 import { RUSSIAN_B2 } from '../data/russian-b2.js';
+import { URBAN_SLANG } from '../data/urban-slang.js';
+import { TONGUE_TWISTERS } from '../data/tongue-twisters.js';
 
 // ===== State Management =====
 const state = {
@@ -161,6 +163,14 @@ function updateCategoryNav() {
           <span class="category-icon">T</span>
           <span class="category-label">Technical</span>
         </button>
+        <button class="category-btn ${state.currentCategory === 'slang' ? 'active' : ''}" data-category="slang">
+          <span class="category-icon">🔥</span>
+          <span class="category-label">Urban Slang</span>
+        </button>
+        <button class="category-btn ${state.currentCategory === 'twisters' ? 'active' : ''}" data-category="twisters">
+          <span class="category-icon">👅</span>
+          <span class="category-label">Twisters</span>
+        </button>
         `;
     } else {
         nav.innerHTML = `
@@ -273,6 +283,12 @@ function loadWords() {
                     allWords.push(...TECHNICAL_VOCABULARY[sub].map(w => ({ ...w, subcategory: sub, phonetic: formatPhonetic(w.phonetic) })));
                 }
             });
+            break;
+        case 'slang':
+            allWords = URBAN_SLANG.map(w => ({ ...w, phonetic: formatPhonetic(w.phonetic) }));
+            break;
+        case 'twisters':
+            allWords = TONGUE_TWISTERS.map(w => ({ ...w, word: w.text, phonetic: formatPhonetic(w.phonetic) }));
             break;
         case 'b1-intensive':
             // Russian exclusive
