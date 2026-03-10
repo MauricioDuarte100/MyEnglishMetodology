@@ -50,6 +50,169 @@ let flashcardTimerInterval = null;
 let flashcardTimeRemaining = 0;
 let autoPlayInterval = null;
 
+// ===== Loop System (Failure Tracking) =====
+let failures = {};
+
+function loadFailures() {
+    const saved = localStorage.getItem('vocabFailures');
+    if (saved) failures = JSON.parse(saved);
+}
+
+function saveFailures() {
+    localStorage.setItem('vocabFailures', JSON.stringify(failures));
+}
+
+function recordFailure(wordObj) {
+    if (!wordObj) return;
+    const key = `${state.currentCategory}:${wordObj.word}`;
+    failures[key] = (failures[key] || 0) + 1;
+    saveFailures();
+}
+
+function clearFailure(wordObj) {
+    if (!wordObj) return;
+    const key = `${state.currentCategory}:${wordObj.word}`;
+    if (failures[key]) {
+        delete failures[key];
+        saveFailures();
+    }
+}
+
+function getLoopWords() {
+    // Return words with 2+ failures from ALL categories
+    const loopWords = [];
+    const allData = {
+        core: state.currentLanguage === 'ru' ? RUSSIAN_CORE : CORE_1000,
+        advanced: ADVANCED_1000,
+        slang: URBAN_SLANG,
+        twisters: TONGUE_TWISTERS
+    };
+
+    for (const [failKey, count] of Object.entries(failures)) {
+        if (count < 2) continue;
+        const [cat, ...wordParts] = failKey.split(':');
+        const wordStr = wordParts.join(':');
+        const source = allData[cat];
+        if (!source) continue;
+        const found = source.find(w => (w.word || w.text) === wordStr);
+        if (found) {
+            loopWords.push({
+                ...found,
+                word: found.word || found.text,
+                _isLoop: true,
+                _loopCategory: cat,
+                _failCount: count
+            });
+        }
+    }
+    return loopWords;
+}
+
+// ===== Guided Session State =====
+const sessionState = {
+    active: false,
+    currentPhase: 0,
+    phases: ['flashcard', 'quiz', 'typing', 'fillblanks', 'matching', 'reading'],
+    phaseLabels: ['Tarjetas', 'Quiz', 'Escribir', 'Completar', 'Parejas', 'Lectura'],
+    startTime: null
+};
+
+function startSession() {
+    sessionState.active = true;
+    sessionState.currentPhase = 0;
+    sessionState.startTime = Date.now();
+
+    // Hide normal navigation
+    const categoryNav = document.getElementById('categoryNav');
+    const modeNav = document.getElementById('modeNav');
+    const setContainer = document.getElementById('setContainer');
+    if (categoryNav) categoryNav.classList.add('hidden');
+    if (modeNav) modeNav.classList.add('hidden');
+    if (setContainer) setContainer.classList.add('hidden');
+
+    // Show session overlay
+    const overlay = document.getElementById('sessionOverlay');
+    if (overlay) overlay.classList.remove('hidden');
+
+    renderSessionStepper();
+    goToSessionPhase(0);
+}
+
+function goToSessionPhase(phaseIndex) {
+    sessionState.currentPhase = phaseIndex;
+    const mode = sessionState.phases[phaseIndex];
+    state.currentMode = mode;
+
+    // Update mode buttons visually (even though nav is hidden)
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    const modeBtn = document.querySelector(`.mode-btn[data-mode="${mode}"]`);
+    if (modeBtn) modeBtn.classList.add('active');
+
+    renderSessionStepper();
+    resetMode();
+    updateDisplay();
+}
+
+function advanceSession() {
+    if (sessionState.currentPhase < sessionState.phases.length - 1) {
+        goToSessionPhase(sessionState.currentPhase + 1);
+    } else {
+        // Session complete
+        endSession(true);
+    }
+}
+
+function endSession(completed = false) {
+    const elapsed = sessionState.startTime ? Math.floor((Date.now() - sessionState.startTime) / 1000) : 0;
+
+    // Save session time to profile
+    const profile = JSON.parse(localStorage.getItem('vocabProfile') || '{"totalTimerSeconds":0,"sessionsCompleted":0,"setHistory":[]}');
+    profile.totalTimerSeconds += elapsed;
+    if (completed) profile.sessionsCompleted += 1;
+    profile.setHistory.unshift({
+        category: state.currentCategory,
+        set: state.currentSet,
+        date: new Date().toISOString().split('T')[0],
+        type: 'session',
+        completed: completed,
+        durationSeconds: elapsed
+    });
+    // Keep only last 50 entries
+    if (profile.setHistory.length > 50) profile.setHistory = profile.setHistory.slice(0, 50);
+    localStorage.setItem('vocabProfile', JSON.stringify(profile));
+
+    sessionState.active = false;
+    sessionState.startTime = null;
+
+    // Restore normal navigation
+    const categoryNav = document.getElementById('categoryNav');
+    const modeNav = document.getElementById('modeNav');
+    const setContainer = document.getElementById('setContainer');
+    if (categoryNav) categoryNav.classList.remove('hidden');
+    if (modeNav) modeNav.classList.remove('hidden');
+    if (setContainer) setContainer.classList.remove('hidden');
+
+    // Hide session overlay
+    const overlay = document.getElementById('sessionOverlay');
+    if (overlay) overlay.classList.add('hidden');
+
+    if (completed) {
+        setTimeout(() => alert('Session completada. Buen trabajo!'), 300);
+    }
+}
+
+function renderSessionStepper() {
+    const stepper = document.getElementById('sessionStepper');
+    if (!stepper) return;
+
+    stepper.innerHTML = sessionState.phaseLabels.map((label, i) => {
+        let cls = 'phase-step';
+        if (i < sessionState.currentPhase) cls += ' completed';
+        if (i === sessionState.currentPhase) cls += ' active';
+        return `<div class="${cls}"><span class="phase-number">${i + 1}</span><span class="phase-label">${label}</span></div>`;
+    }).join('');
+}
+
 // ===== Initialization =====
 function init() {
     // Initialize elements
@@ -119,6 +282,7 @@ function init() {
 
     loadProgress();
     loadAssociations();
+    loadFailures();
     loadWords();
     setupEventListeners();
     initReading();
@@ -134,6 +298,22 @@ function init() {
     if (matchingElements.nextBtn) {
         matchingElements.nextBtn.addEventListener('click', initMatching);
     }
+
+    // Session event listeners
+    const startSessionBtn = document.getElementById('startSessionBtn');
+    if (startSessionBtn) startSessionBtn.addEventListener('click', startSession);
+    const nextPhaseBtn = document.getElementById('nextPhaseBtn');
+    if (nextPhaseBtn) nextPhaseBtn.addEventListener('click', advanceSession);
+    const exitSessionBtn = document.getElementById('exitSessionBtn');
+    if (exitSessionBtn) exitSessionBtn.addEventListener('click', () => endSession(false));
+
+    // Profile event listeners
+    const profileBtn = document.getElementById('profileBtn');
+    if (profileBtn) profileBtn.addEventListener('click', openProfile);
+    const profileCloseBtn = document.getElementById('profileCloseBtn');
+    if (profileCloseBtn) profileCloseBtn.addEventListener('click', closeProfile);
+    const profileBackdrop = document.getElementById('profileBackdrop');
+    if (profileBackdrop) profileBackdrop.addEventListener('click', closeProfile);
 
     updateDisplay();
 }
@@ -318,6 +498,14 @@ function loadWords() {
         updateSetSelector(allWords.length);
     } else {
         state.currentWords = allWords.slice(start, end);
+    }
+
+    // Inject loop words (max 5) into the current set
+    const loopWords = getLoopWords();
+    const existingKeys = new Set(state.currentWords.map(w => w.word));
+    const toInject = loopWords.filter(w => !existingKeys.has(w.word)).slice(0, 5);
+    if (toInject.length > 0) {
+        state.currentWords.push(...toInject);
     }
 
     shuffleArray(state.currentWords);
@@ -603,6 +791,11 @@ function markWord(status) {
     state.progress[key] = status;
     saveProgress();
 
+    // Loop system: clear failure when mastered
+    if (status === 'mastered') {
+        clearFailure(word);
+    }
+
     if (state.currentMode === 'flashcard') {
         if (state.currentIndex < state.currentWords.length - 1) {
             state.currentIndex++;
@@ -651,9 +844,9 @@ function updateDisplay() {
     const categoryNav = document.getElementById('categoryNav');
     const progressIndicator = document.getElementById('progressIndicator');
 
-    if (state.currentMode === 'reading') {
+    if (state.currentMode === 'reading' || sessionState.active) {
         categoryNav.classList.add('hidden');
-        progressIndicator.classList.add('hidden');
+        if (state.currentMode === 'reading') progressIndicator.classList.add('hidden');
     } else {
         categoryNav.classList.remove('hidden');
         progressIndicator.classList.remove('hidden');
@@ -757,7 +950,17 @@ function toggleFlashcardTimer() {
 }
 
 function stopFlashcardTimer() {
-    if (flashcardTimerInterval) clearInterval(flashcardTimerInterval);
+    if (flashcardTimerInterval) {
+        // Accumulate elapsed time into profile
+        const totalMinutes = parseInt(elements.timerSelect.value) || 0;
+        const elapsed = (totalMinutes * 60) - flashcardTimeRemaining;
+        if (elapsed > 0) {
+            const profile = JSON.parse(localStorage.getItem('vocabProfile') || '{"totalTimerSeconds":0,"sessionsCompleted":0,"setHistory":[]}');
+            profile.totalTimerSeconds += elapsed;
+            localStorage.setItem('vocabProfile', JSON.stringify(profile));
+        }
+        clearInterval(flashcardTimerInterval);
+    }
     flashcardTimerInterval = null;
     elements.startTimerBtn.textContent = "Iniciar";
     elements.startTimerBtn.classList.remove('stop');
@@ -779,6 +982,12 @@ function updateFlashcard() {
     if (elements.flashcardCurrentCount && elements.flashcardTotalCount) {
         elements.flashcardCurrentCount.textContent = state.currentIndex + 1;
         elements.flashcardTotalCount.textContent = state.currentWords.length;
+    }
+
+    // Loop badge visibility
+    const loopBadge = document.getElementById('loopBadge');
+    if (loopBadge) {
+        loopBadge.classList.toggle('hidden', !word._isLoop);
     }
 
     const ruWordMain = document.getElementById('ruWordMain');
@@ -891,6 +1100,8 @@ function handleQuizAnswer(index) {
         });
         elements.quizFeedback.querySelector('.feedback-text').textContent = 'Incorrecto. Mira la respuesta correcta arriba.';
         elements.quizFeedback.querySelector('.feedback-text').className = 'feedback-text incorrect';
+        // Loop system: record failure
+        recordFailure(state.currentWords[state.currentIndex]);
     }
 
     optionButtons.forEach(btn => btn.disabled = true);
@@ -944,6 +1155,8 @@ function checkTypingAnswer() {
     } else {
         feedbackText.textContent = `Incorrecto. Sigues intentándolo o presiona 'Pista'.`;
         feedbackText.className = 'feedback-text incorrect';
+        // Loop system: record failure
+        recordFailure(state.currentWords[state.currentIndex]);
     }
 
     elements.typingFeedback.classList.remove('hidden');
@@ -1011,6 +1224,9 @@ function checkFillBlanks() {
             select.classList.add('incorrect');
             select.classList.remove('correct');
             allCorrect = false;
+            // Loop system: record failure for wrong word
+            const wrongWord = state.currentWords.find(w => w.word.toLowerCase() === fillBlanksCorrectAnswers[index]);
+            if (wrongWord) recordFailure(wrongWord);
         }
     });
 
@@ -1331,6 +1547,14 @@ function handleMatchingCardClick(index) {
                 matchingState.cards[c2.index].state = 'mismatch';
                 renderMatchingGrid();
 
+                // Loop system: record failure for both mismatched cards
+                [c1, c2].forEach(c => {
+                    if (c.type === 'word') {
+                        const wordObj = state.currentWords.find(w => w.word === c.content);
+                        if (wordObj) recordFailure(wordObj);
+                    }
+                });
+
                 setTimeout(() => {
                     matchingState.cards[c1.index].state = 'face-down';
                     matchingState.cards[c2.index].state = 'face-down';
@@ -1338,6 +1562,69 @@ function handleMatchingCardClick(index) {
                     renderMatchingGrid();
                 }, 800);
             }
+        }
+    }
+}
+
+// ===== Profile Panel Functions =====
+function openProfile() {
+    renderProfile();
+    const panel = document.getElementById('profilePanel');
+    const backdrop = document.getElementById('profileBackdrop');
+    if (panel) panel.classList.remove('hidden');
+    if (backdrop) backdrop.classList.remove('hidden');
+}
+
+function closeProfile() {
+    const panel = document.getElementById('profilePanel');
+    const backdrop = document.getElementById('profileBackdrop');
+    if (panel) panel.classList.add('hidden');
+    if (backdrop) backdrop.classList.add('hidden');
+}
+
+function renderProfile() {
+    const progress = state.progress;
+    let mastered = 0;
+    let learning = 0;
+
+    for (const status of Object.values(progress)) {
+        if (status === 'mastered') mastered++;
+        if (status === 'learning') learning++;
+    }
+
+    const profile = JSON.parse(localStorage.getItem('vocabProfile') || '{"totalTimerSeconds":0,"sessionsCompleted":0,"setHistory":[]}');
+    const totalSecs = profile.totalTimerSeconds || 0;
+    const hours = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+    // Count loop words
+    const loopCount = Object.values(failures).filter(c => c >= 2).length;
+
+    // Update stats
+    const statMastered = document.getElementById('statMastered');
+    const statLearning = document.getElementById('statLearning');
+    const statTimer = document.getElementById('statTimer');
+    const statLoops = document.getElementById('statLoops');
+
+    if (statMastered) statMastered.textContent = mastered;
+    if (statLearning) statLearning.textContent = learning;
+    if (statTimer) statTimer.textContent = timeStr;
+    if (statLoops) statLoops.textContent = loopCount;
+
+    // Render history
+    const historyList = document.getElementById('profileHistory');
+    if (historyList) {
+        const entries = profile.setHistory || [];
+        if (entries.length === 0) {
+            historyList.innerHTML = '<li class="history-empty">Sin actividad aun</li>';
+        } else {
+            historyList.innerHTML = entries.slice(0, 10).map(entry => {
+                const durMins = entry.durationSeconds ? Math.floor(entry.durationSeconds / 60) : 0;
+                const icon = entry.completed ? '<span class="history-icon completed">&#10003;</span>' : '<span class="history-icon">&#9679;</span>';
+                const typeLabel = entry.type === 'session' ? 'Session' : `Set ${entry.set}`;
+                return `<li class="history-item">${icon}<span class="history-details"><strong>${typeLabel}</strong> - ${entry.category || 'core'} <span class="history-date">${entry.date}</span></span><span class="history-duration">${durMins}m</span></li>`;
+            }).join('');
         }
     }
 }

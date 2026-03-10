@@ -20,6 +20,7 @@ import '../styles/global.css';
     <!-- Header -->
     <header class="header">
       <div class="logo">VOCAB</div>
+      <button class="session-btn" id="startSessionBtn">Start Session</button>
       
       <div class="controls-container">
         <div class="language-selector">
@@ -42,7 +43,23 @@ import '../styles/global.css';
           <div class="progress-fill" id="progressFill"></div>
         </div>
       </div>
+
+      <button class="profile-btn" id="profileBtn" title="Perfil">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      </button>
     </header>
+
+    <!-- Session Overlay -->
+    <div class="session-overlay hidden" id="sessionOverlay">
+      <div class="session-stepper" id="sessionStepper"></div>
+      <div class="session-controls">
+        <button class="session-control-btn next" id="nextPhaseBtn">Siguiente Fase</button>
+        <button class="session-control-btn exit" id="exitSessionBtn">Salir</button>
+      </div>
+    </div>
 
     <!-- Main Content -->
     <main class="main">
@@ -102,6 +119,9 @@ import '../styles/global.css';
 
         <div class="flashcard" id="flashcard">
           <div class="flashcard-front">
+            <!-- Loop Badge -->
+            <span class="loop-badge hidden" id="loopBadge">LOOP</span>
+
             <!-- 1. Top: Russian Word (Big, Accent) -->
             <div class="ru-word-main hidden" id="ruWordMain"></div>
             
@@ -322,6 +342,45 @@ import '../styles/global.css';
         <button class="modal-close" id="closeFilterModal">Aplicar</button>
       </div>
     </div>
+
+    <!-- Profile Panel -->
+    <div class="profile-backdrop hidden" id="profileBackdrop"></div>
+    <aside class="profile-panel hidden" id="profilePanel">
+      <div class="profile-header">
+        <h3>Tu Perfil</h3>
+        <button class="profile-close-btn" id="profileCloseBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="profile-stats" id="profileStats">
+        <div class="profile-stat">
+          <span class="stat-value" id="statMastered">0</span>
+          <span class="stat-label">Dominadas</span>
+        </div>
+        <div class="profile-stat">
+          <span class="stat-value" id="statLearning">0</span>
+          <span class="stat-label">En progreso</span>
+        </div>
+        <div class="profile-stat">
+          <span class="stat-value" id="statTimer">0m</span>
+          <span class="stat-label">Tiempo total</span>
+        </div>
+        <div class="profile-stat">
+          <span class="stat-value" id="statLoops">0</span>
+          <span class="stat-label">En loop</span>
+        </div>
+      </div>
+
+      <div class="profile-history-section">
+        <h4>Historial Reciente</h4>
+        <ul class="profile-history" id="profileHistory">
+          <li class="history-empty">Sin actividad aun</li>
+        </ul>
+      </div>
+    </aside>
   </div>
 
   <script src="../scripts/main.js"></script>
