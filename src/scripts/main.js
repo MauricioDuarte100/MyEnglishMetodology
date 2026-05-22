@@ -226,11 +226,16 @@ function init() {
         typingDefinition: document.getElementById('typingDefinition'),
         flashcard: document.getElementById('flashcard'),
         currentWord: document.getElementById('currentWord'),
+        wordMeta: document.getElementById('wordMeta'),
+        wordType: document.getElementById('wordType'),
+        wordRegister: document.getElementById('wordRegister'),
         wordTop: document.getElementById('wordTop'),
         phoneticFront: document.getElementById('phoneticFront'),
         phonetic: document.getElementById('phonetic'),
         definition: document.getElementById('definition'),
         example: document.getElementById('example'),
+        spanishCue: document.getElementById('spanishCue'),
+        soundCue: document.getElementById('soundCue'),
         prevBtn: document.getElementById('prevBtn'),
         nextBtn: document.getElementById('nextBtn'),
         knowBtn: document.getElementById('knowBtn'),
@@ -833,6 +838,8 @@ function getWordStatus(word) {
 
 // ===== Display Updates =====
 function updateDisplay() {
+    updateMethodStrip();
+
     // Hide all modes
     elements.flashcardMode.classList.add('hidden');
     elements.quizMode.classList.add('hidden');
@@ -975,6 +982,29 @@ function updateTimerDisplay() {
     elements.timerDisplay.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
+function getWordType(word) {
+    if (!word) return 'uso comun';
+    if (state.currentCategory === 'technical') return word.subcategory ? word.subcategory.replace(/([A-Z])/g, ' $1').toLowerCase() : 'termino tecnico';
+    if (state.currentCategory === 'slang') return word.word?.toLowerCase().startsWith('flow') ? 'frase de flow' : 'slang / contraccion';
+    if (state.currentCategory === 'twisters') return 'pronunciacion';
+    if (/\s|\/|'/.test(word.word || '')) return 'frase';
+    if ((word.word || '').endsWith('ing')) return 'accion';
+    return 'palabra base';
+}
+
+function getRegisterLabel() {
+    if (state.currentLanguage === 'ru') return 'ruso practico';
+    if (state.currentCategory === 'slang') return 'americano urbano';
+    if (state.currentCategory === 'technical') return 'IT / trabajo real';
+    if (state.currentCategory === 'advanced') return 'ingles intermedio+';
+    if (state.currentCategory === 'twisters') return 'diccion rapida';
+    return 'americano comun';
+}
+
+function getSpanishCue(word) {
+    return word.translation_es || word.translation || word.definition || '';
+}
+
 function updateFlashcard() {
     const word = state.currentWords[state.currentIndex];
     if (!word) return;
@@ -1004,10 +1034,13 @@ function updateFlashcard() {
         if (ruPhonetic) { ruPhonetic.textContent = `/${word.phonetic || word.word}/`; ruPhonetic.classList.remove('hidden'); }
         elements.currentWord.classList.add('hidden');
         elements.phonetic.classList.add('hidden');
+        if (elements.wordMeta) elements.wordMeta.classList.add('hidden');
         elements.definition.textContent = word.definition;
         elements.example.textContent = '"' + word.example + '"';
         elements.translationPrimary.textContent = word.translation_en || '';
         elements.translationSecondary.classList.add('hidden');
+        if (elements.spanishCue) elements.spanishCue.textContent = word.translation_es || '';
+        if (elements.soundCue) elements.soundCue.textContent = word.phonetic || word.word;
     } else {
         if (ruWordMain) ruWordMain.classList.add('hidden');
         if (ruLetterBreakdown) ruLetterBreakdown.classList.add('hidden');
@@ -1015,8 +1048,11 @@ function updateFlashcard() {
         if (ruPhonetic) ruPhonetic.classList.add('hidden');
         elements.currentWord.classList.remove('hidden');
         elements.phonetic.classList.remove('hidden');
+        if (elements.wordMeta) elements.wordMeta.classList.remove('hidden');
         elements.currentWord.textContent = word.word;
         elements.phonetic.textContent = `/${word.phonetic || word.word}/`;
+        if (elements.wordType) elements.wordType.textContent = getWordType(word);
+        if (elements.wordRegister) elements.wordRegister.textContent = getRegisterLabel();
         if (word.translation_es) {
             elements.translationPrimary.textContent = word.translation_es;
             elements.translationSecondary.textContent = word.translation_en ? `(${word.translation_en})` : '';
@@ -1028,6 +1064,8 @@ function updateFlashcard() {
         }
         elements.definition.textContent = word.definition;
         elements.example.textContent = '"' + word.example + '"';
+        if (elements.spanishCue) elements.spanishCue.textContent = getSpanishCue(word);
+        if (elements.soundCue) elements.soundCue.textContent = word.phonetic || word.word;
     }
 
     const assocInput = document.getElementById('associationInput');
@@ -1277,6 +1315,24 @@ function updateProgress() {
     }
 }
 
+function updateMethodStrip() {
+    const steps = document.querySelectorAll('.method-step');
+    if (!steps.length) return;
+
+    steps.forEach(step => step.classList.remove('active'));
+
+    const indexByCategory = {
+        core: 0,
+        advanced: 1,
+        technical: 2,
+        slang: 3,
+        twisters: 3
+    };
+
+    const activeIndex = indexByCategory[state.currentCategory] ?? 0;
+    if (steps[activeIndex]) steps[activeIndex].classList.add('active');
+}
+
 // ===== Reading Functions =====
 
 async function handleGenerateText() {
@@ -1402,11 +1458,11 @@ function showReadingLoading(show) {
     if (show) {
         readingElements.loadingSpinner.classList.remove('hidden');
         readingElements.generateBtn.disabled = true;
-        readingElements.generateBtn.textContent = 'Generating...';
+        readingElements.generateBtn.textContent = 'Generando...';
     } else {
         readingElements.loadingSpinner.classList.add('hidden');
         readingElements.generateBtn.disabled = false;
-        readingElements.generateBtn.textContent = 'Generate New Text';
+        readingElements.generateBtn.textContent = 'Generar nuevo texto';
     }
 }
 

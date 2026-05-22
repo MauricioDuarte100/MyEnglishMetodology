@@ -28,6 +28,7 @@
 
   --accent: #20d3ee;
   --accent-hover: #06b6d4;
+  --accent-bg: rgba(32, 211, 238, 0.12);
   --success: #22c55e;
   --success-bg: rgba(34, 197, 94, 0.1);
   --warning: #f59e0b;
@@ -112,10 +113,20 @@ body {
 }
 
 .logo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
   font-size: var(--font-size-xl);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: var(--text-primary);
+}
+
+.logo small {
+  color: var(--accent);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
 .progress-indicator {
@@ -146,6 +157,18 @@ body {
   border-radius: 2px;
   transition: width var(--transition-slow);
   width: 0%;
+}
+
+.controls-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.language-selector,
+.set-container {
+  display: flex;
+  align-items: center;
 }
 
 /* ===== Main Content ===== */
@@ -249,6 +272,44 @@ body {
   align-items: center;
   gap: var(--spacing-xl);
   padding: var(--spacing-xl) 0;
+}
+
+.method-strip {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-sm);
+}
+
+.method-step {
+  min-height: 74px;
+  padding: var(--spacing-md);
+  background: var(--glass-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.method-step.active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.method-kicker {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.method-step strong {
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.25;
 }
 
 .flashcard {
@@ -394,8 +455,26 @@ body {
 .word {
   font-size: var(--font-size-4xl);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   text-align: center;
+}
+
+.word-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--spacing-xs);
+}
+
+.word-meta span {
+  padding: 4px 9px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 1px solid rgba(32, 211, 238, 0.22);
+  border-radius: 99px;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .phonetic,
@@ -453,6 +532,38 @@ body {
 .translation-secondary {
   font-size: var(--font-size-sm);
   color: var(--text-muted);
+}
+
+.usage-panel {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm);
+}
+
+.usage-panel > div {
+  min-width: 0;
+  padding: var(--spacing-sm);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.usage-label {
+  display: block;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.usage-panel strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 /* Saved Animation */
@@ -1315,6 +1426,18 @@ body {
   outline: none;
 }
 
+.quick-test-btn {
+  padding: 0.5rem 1.5rem;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.quick-test-btn.active {
+  border-color: var(--error);
+  color: var(--error);
+  background: var(--error-bg);
+}
+
 .association-input:focus {
   border-color: var(--accent);
 }
@@ -1384,6 +1507,26 @@ body {
     --font-size-3xl: 1.5rem;
   }
 
+  .app {
+    padding: var(--spacing-sm);
+  }
+
+  .header {
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+  }
+
+  .controls-container {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .method-strip {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .category-nav {
     flex-direction: column;
   }
@@ -1400,6 +1543,23 @@ body {
   .flashcard-actions {
     flex-wrap: wrap;
     justify-content: center;
+  }
+
+  .flashcard-front,
+  .flashcard-back {
+    padding: var(--spacing-xl);
+  }
+
+  .usage-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .mode-nav {
+    overflow-x: auto;
+  }
+
+  .mode-btn {
+    min-width: max-content;
   }
 
 }

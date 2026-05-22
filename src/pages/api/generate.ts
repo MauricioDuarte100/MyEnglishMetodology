@@ -1,34 +1,34 @@
 import type { APIRoute } from 'astro';
 import { READING_CONFIG } from '../../data/reading-prompts';
 
-const KEYS = [
+const GEMINI_KEYS = [
     import.meta.env.GEMINI_API_KEY,
     import.meta.env.GEMINI_API_KEY_BACKUP
 ].filter(Boolean);
 
-const BASE_URLS = [
-    'https://generativelanguage.googleapis.com/v1beta/models',
-    'https://generativelanguage.googleapis.com/v1/models'
-];
-
-const MODELS = [
-    'gemini-1.5-flash',
-    'gemini-1.5-pro',
-    'gemini-2.0-flash-exp',
-    'gemini-pro',
-    'google/gemini-pro', // OpenRouter model
-    'google/gemini-2.0-flash-exp:free', // OpenRouter free model
-    'deepseek/deepseek-chat', // OpenRouter DB
+const GEMINI_MODELS = [
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-1.5-flash-latest',
 ];
 
 const OPENROUTER_KEY = import.meta.env.OPENROUTER_API_KEY;
-if (OPENROUTER_KEY) {
-    KEYS.push(OPENROUTER_KEY);
-    BASE_URLS.push('https://openrouter.ai/api/v1/chat/completions');
-}
+const OPENROUTER_MODELS = [
+    'google/gemini-2.5-flash',
+    'google/gemini-2.0-flash-001',
+    'deepseek/deepseek-chat',
+];
+
+type ProviderError = {
+    provider: string;
+    model: string;
+    status?: number;
+    message: string;
+};
 
 export const POST: APIRoute = async ({ request }) => {
-    if (KEYS.length === 0) {
+    if (GEMINI_KEYS.length === 0 && !OPENROUTER_KEY) {
         return new Response(JSON.stringify({ error: 'No API keys configured' }), { status: 500 });
     }
 
@@ -58,9 +58,12 @@ export const POST: APIRoute = async ({ request }) => {
             ]
         }`;
             } else {
-                prompt = `Genera un diálogo simulando preguntas y respuestas detalladas en inglés (nivel ${level}) sobre el tema: "${topic || 'General'}".
-        CRÍTICO: El diálogo debe ser extenso, con **8 a 12 intercambios** de ida y vuelta. Cada intervención debe ser **larga y detallada**, idealmente de 2 a 4 oraciones completas por turno, evitando respuestas y preguntas de una sola línea.
-        CRÍTICO: NO uses el alfabeto fonético internacional (IPA). Para la fonética, debes escribir cómo se pronunciaría leyéndolo en ESPAÑOL, pero **simulando un acento americano urbano muy marcado (tipo Nueva York, Bronx, Chicago, rap/trap flow)**. Usa abreviaciones comunes del rap y la calle como 'gonna' (góna), 'wanna' (wána), 'ain't' (eint), omite la 'g' final en gerundios (ej: chillin = chílin), y conecta las palabras fluidamente (ejemplo: "What are you going to do" = "wára iu góna du", "believe" = "biliv").
+                prompt = `Genera un diálogo de práctica en inglés americano coloquial (nivel ${level}) sobre el tema: "${topic || 'General'}".
+        OBJETIVO: enseñar vocabulario frecuente, escucha real, gramática simple y pronunciación práctica para una persona hispanohablante.
+        TONO: natural, juvenil y urbano de Estados Unidos, con contracciones reales como gonna, wanna, gotta, ain't, lemme, tryna, kinda, chillin'. Evita caricaturizar dialectos o glorificar violencia; usa el registro como entrenamiento de oído cotidiano.
+        CRÍTICO: El diálogo debe tener 8 a 12 intercambios. Cada intervención debe tener 2 a 4 oraciones completas, mezclando frases cortas naturales con explicaciones útiles.
+        CRÍTICO: NO uses IPA. La fonética debe estar escrita como se leería en ESPAÑOL, con acento americano urbano y palabras conectadas. Ejemplos: "What are you going to do?" = "wára iu góna du?", "I ain't got time" = "ai eint gat taim", "believe" = "biliv".
+        CRÍTICO: La traducción al español debe sonar natural, no literal palabra por palabra.
         Devuelve ÚNICAMENTE un objeto JSON con esta estructura exacta, sin texto adicional:
         {
             "title": "Título en Inglés (Traducción al Español)",
@@ -73,7 +76,8 @@ export const POST: APIRoute = async ({ request }) => {
                 }
             ],
             "difficultWords": [
-                {"word": "Interview", "definition": "Entrevista", "example": "Job interview"}
+                {"word": "gonna", "definition": "forma coloquial de going to / voy a", "example": "I'm gonna call you later."},
+                {"word": "ain't", "definition": "negación coloquial: am not / is not / are not / have not", "example": "I ain't ready yet."}
             ]
         }`;
             }
@@ -90,69 +94,101 @@ export const POST: APIRoute = async ({ request }) => {
             prompt = READING_CONFIG.prompts[promptKey as keyof typeof READING_CONFIG.prompts];
         }
 
-        let lastError;
         let successfulResponse;
         let usedConfig = '';
+        const errors: ProviderError[] = [];
 
-        for (const key of KEYS) {
-            if (successfulResponse) break;
-
-            for (const baseUrl of BASE_URLS) {
+        for (const key of GEMINI_KEYS) {
+            for (const model of GEMINI_MODELS) {
                 if (successfulResponse) break;
 
-                for (const model of MODELS) {
-                    if (successfulResponse) break;
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: {
+                                responseMimeType: 'application/json',
+                                temperature: 0.8
+                            }
+                        })
+                    });
 
-                    try {
-                        let url, body, isOpenRouter = false;
-
-                        if (baseUrl.includes('openrouter') || baseUrl.includes('chat/completions')) {
-                            isOpenRouter = true;
-                            url = baseUrl; // OpenRouter uses the base URL directly
-                            body = JSON.stringify({
-                                model: model,
-                                messages: [{ role: 'user', content: prompt }]
-                            });
-                        } else {
-                            // Google Gemini API
-                            url = `${baseUrl}/${model}:generateContent?key=${key}`;
-                            body = JSON.stringify({
-                                contents: [{ parts: [{ text: prompt }] }]
-                            });
-                        }
-
-                        // console.log(`Attempting: ${model} on ${isOpenRouter ? 'OpenRouter' : 'Google API'}`);
-
-                        const headers: any = { 'Content-Type': 'application/json' };
-                        if (isOpenRouter) {
-                            headers['Authorization'] = `Bearer ${key}`;
-                            // Remove key param from URL if OpenRouter, though we built it cleanly above
-                        }
-
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: headers,
-                            body: body
-                        });
-
-                        if (response.ok) {
-                            successfulResponse = await response.json();
-                            usedConfig = `${model} (${isOpenRouter ? 'OpenRouter' : 'Google'})`;
-                            console.log(`Success with: ${usedConfig}`);
-                            break;
-                        } else {
-                            const errorData = await response.json();
-                            lastError = errorData;
-                        }
-                    } catch (e) {
-                        lastError = e;
+                    if (response.ok) {
+                        successfulResponse = await response.json();
+                        usedConfig = `${model} (Google Gemini)`;
+                        console.log(`Success with: ${usedConfig}`);
+                        break;
                     }
+
+                    const errorData = await safeJson(response);
+                    errors.push({
+                        provider: 'Google Gemini',
+                        model,
+                        status: response.status,
+                        message: getErrorMessage(errorData)
+                    });
+                } catch (e) {
+                    errors.push({
+                        provider: 'Google Gemini',
+                        model,
+                        message: String(e)
+                    });
+                }
+            }
+        }
+
+        if (!successfulResponse && OPENROUTER_KEY) {
+            for (const model of OPENROUTER_MODELS) {
+                if (successfulResponse) break;
+
+                try {
+                    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${OPENROUTER_KEY}`,
+                            'HTTP-Referer': request.headers.get('origin') || 'http://localhost:4321',
+                            'X-Title': 'VOCAB English Learning'
+                        },
+                        body: JSON.stringify({
+                            model,
+                            messages: [{ role: 'user', content: prompt }],
+                            temperature: 0.8,
+                            response_format: { type: 'json_object' }
+                        })
+                    });
+
+                    if (response.ok) {
+                        successfulResponse = await response.json();
+                        usedConfig = `${model} (OpenRouter)`;
+                        console.log(`Success with: ${usedConfig}`);
+                        break;
+                    }
+
+                    const errorData = await safeJson(response);
+                    errors.push({
+                        provider: 'OpenRouter',
+                        model,
+                        status: response.status,
+                        message: getErrorMessage(errorData)
+                    });
+                } catch (e) {
+                    errors.push({
+                        provider: 'OpenRouter',
+                        model,
+                        message: String(e)
+                    });
                 }
             }
         }
 
         if (!successfulResponse) {
-            return new Response(JSON.stringify({ error: 'All models/keys/versions failed', details: lastError }), { status: 500 });
+            return new Response(JSON.stringify({
+                error: 'No se pudo generar el texto con las API keys configuradas',
+                details: errors.slice(-6)
+            }), { status: 500 });
         }
 
         let generatedText;
@@ -199,4 +235,16 @@ export const POST: APIRoute = async ({ request }) => {
         console.error('Server error:', error);
         return new Response(JSON.stringify({ error: 'Server error', details: String(error) }), { status: 500 });
     }
+}
+
+async function safeJson(response: Response) {
+    try {
+        return await response.json();
+    } catch {
+        return { error: await response.text() };
+    }
+}
+
+function getErrorMessage(errorData: any) {
+    return errorData?.error?.message || errorData?.message || JSON.stringify(errorData);
 }

@@ -19,8 +19,11 @@ import '../styles/global.css';
   <div class="app">
     <!-- Header -->
     <header class="header">
-      <div class="logo">VOCAB</div>
-      <button class="session-btn" id="startSessionBtn">Start Session</button>
+      <div class="logo">
+        <span>VOCAB</span>
+        <small>1K -> 2K -> IT</small>
+      </div>
+      <button class="session-btn" id="startSessionBtn">Sesión guiada</button>
       
       <div class="controls-container">
         <div class="language-selector">
@@ -99,6 +102,24 @@ import '../styles/global.css';
 
       <!-- Flashcard Mode -->
       <section class="flashcard-container" id="flashcardMode">
+        <div class="method-strip" aria-label="Ruta de aprendizaje">
+          <div class="method-step active">
+            <span class="method-kicker">Base</span>
+            <strong>Primeras 1000</strong>
+          </div>
+          <div class="method-step">
+            <span class="method-kicker">Fluidez</span>
+            <strong>Segundas 1000</strong>
+          </div>
+          <div class="method-step">
+            <span class="method-kicker">Especialización</span>
+            <strong>IT + Cyber</strong>
+          </div>
+          <div class="method-step">
+            <span class="method-kicker">Oído real</span>
+            <strong>Slang USA</strong>
+          </div>
+        </div>
         
         <div class="flashcard-header">
            <div class="flashcard-counter">
@@ -143,13 +164,27 @@ import '../styles/global.css';
             
             <!-- English Mode Fallback (Hidden for Russian) -->
             <span class="word hidden" id="currentWord">eloquent</span>
+            <div class="word-meta hidden" id="wordMeta">
+              <span id="wordType">uso comun</span>
+              <span id="wordRegister">americano casual</span>
+            </div>
             <span class="phonetic hidden" id="phonetic">/élokuent/</span>
             
-            <span class="hint">Clic para ver ejemplo</span>
+            <span class="hint">Clic para ver significado, ejemplo y hook</span>
           </div>
           <div class="flashcard-back">
             <span class="definition" id="definition">fluent or persuasive in speaking or writing</span>
             <span class="example" id="example">"She gave an eloquent speech about climate change."</span>
+            <div class="usage-panel" id="usagePanel">
+              <div>
+                <span class="usage-label">Como lo pensas</span>
+                <strong id="spanishCue">elocuente</strong>
+              </div>
+              <div>
+                <span class="usage-label">Como suena</span>
+                <strong id="soundCue">e-LO-kuent</strong>
+              </div>
+            </div>
             
             <!-- Dual Translation Container -->
             <div class="translations-container">
@@ -158,8 +193,8 @@ import '../styles/global.css';
             </div>
 
             <div class="association-container">
-              <label for="associationInput">🧠 Mi Hook/Asociación:</label>
-              <textarea id="associationInput" placeholder="Visualiza una imagen o historia..."></textarea>
+              <label for="associationInput">Mi hook mental</label>
+              <textarea id="associationInput" class="association-input" placeholder="Ej: suena como..., lo uso cuando..., imagen mental..."></textarea>
             </div>
           </div>
         </div>
@@ -178,7 +213,7 @@ import '../styles/global.css';
           </button>
         </div>
         <div style="text-align: center; margin-top: 15px;">
-          <button class="action-btn" id="autoPlayFlashcardsBtn" style="padding: 0.5rem 1.5rem; border-radius: 99px; background: rgba(0,0,0,0.5);">⏱️ Test Rápido (3s)</button>
+          <button class="action-btn quick-test-btn" id="autoPlayFlashcardsBtn">Test rápido (3s)</button>
         </div>
       </section>
 
@@ -188,7 +223,7 @@ import '../styles/global.css';
           <span class="quiz-prompt">¿Qué significa:</span>
           <span class="quiz-word" id="quizWord">eloquent</span>
           <span class="quiz-phonetic" id="quizPhonetic">/élokuent/</span>
-          <button class="audio-btn-icon small" id="quizAudioBtn" title="Play pronuncation">
+          <button class="audio-btn-icon small" id="quizAudioBtn" title="Escuchar pronunciación">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
             </svg>
@@ -205,7 +240,7 @@ import '../styles/global.css';
           <button class="next-question-btn" id="nextQuestionBtn">Siguiente Pregunta</button>
         </div>
         <div class="quiz-score" id="quizScore">
-          <span>Score: <strong id="scoreValue">0</strong> / <strong id="totalQuestions">0</strong></span>
+          <span>Puntaje: <strong id="scoreValue">0</strong> / <strong id="totalQuestions">0</strong></span>
         </div>
       </section>
 
@@ -213,7 +248,7 @@ import '../styles/global.css';
       <section class="matching-container hidden" id="matchingMode">
         <div class="matching-header">
            <div class="matching-stats">
-              <span class="matching-stat">Pairs: <strong id="matchingScore">0</strong> / 4</span>
+              <span class="matching-stat">Parejas: <strong id="matchingScore">0</strong> / 4</span>
            </div>
         </div>
         <div class="matching-grid" id="matchingGrid">
@@ -249,7 +284,7 @@ import '../styles/global.css';
       <!-- Fill in the Blanks Mode -->
       <section class="fillblanks-container hidden" id="fillblanksMode">
          <div class="fillblanks-header">
-           <h3 style="margin-bottom: 0.5rem;">Cuales faltan?</h3>
+           <h3 style="margin-bottom: 0.5rem;">¿Cuáles faltan?</h3>
            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Selecciona la palabra correcta para completar cada oración.</p>
          </div>
          <div class="fillblanks-content" id="fillblanksContent">
@@ -267,8 +302,8 @@ import '../styles/global.css';
       <!-- Reading Mode -->
       <section class="reading-container hidden" id="readingSection">
         <div class="reading-header">
-          <h2 class="reading-title">Reading Practice</h2>
-          <p class="reading-subtitle">British English texts with idioms</p>
+          <h2 class="reading-title">Lectura y oído real</h2>
+          <p class="reading-subtitle">Diálogos en inglés americano coloquial con fonética escrita para hispanohablantes</p>
         </div>
 
         <div class="custom-reading-form">
@@ -290,7 +325,7 @@ import '../styles/global.css';
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
           </svg>
-          Generar Nuevo Texto
+          Generar nuevo texto
         </button>
 
         <div class="reading-loading hidden" id="readingLoading">
