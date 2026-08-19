@@ -1,0 +1,262 @@
+---
+import '../styles/global.css';
+---
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metodología | VOCAB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="logo-area">
+        <a href="/" class="logo">
+          <span>VOCAB</span>
+          <small>ENGLISH METHODOLOGY</small>
+        </a>
+      </div>
+      <nav class="top-nav">
+        <a href="/" class="nav-link">Práctica</a>
+        <a href="/methodology" class="nav-link active">Metodología</a>
+        <a href="/pronunciation" class="nav-link">Pronunciación</a>
+        <a href="/resources" class="nav-link">Recursos</a>
+        <a href="/ai-coach" class="nav-link">IA Coach</a>
+      </nav>
+    </header>
+
+    <main class="main methodology-page">
+      <!-- Hero Section -->
+      <section class="method-hero">
+        <h1>Tu sistema de aprendizaje</h1>
+        <p class="hero-subtitle">
+          Basado en la guía <a href="https://github.com/byoungd/English-level-up-tips" target="_blank" rel="noopener">English Level Up Tips</a>
+          y principios de ciencia cognitiva.
+        </p>
+      </section>
+
+      <!-- CEFR Progress -->
+      <section class="cefr-section">
+        <h2>Niveles CEFR - Dónde estás</h2>
+        <p class="section-desc">1000 palabras = 75% del inglés. 7000 palabras = 90%. El retorno de memorizar es decreciente.</p>
+        <div class="cefr-track">
+          <div class="cefr-level" data-level="A1">
+            <strong>A1</strong>
+            <span>0-500 palabras</span>
+            <small>Frases básicas</small>
+          </div>
+          <div class="cefr-level" data-level="A2">
+            <strong>A2</strong>
+            <span>500-1000</span>
+            <small>Tareas simples</small>
+          </div>
+          <div class="cefr-level" data-level="B1">
+            <strong>B1</strong>
+            <span>1000-2500</span>
+            <small>Viajes, rutina</small>
+          </div>
+          <div class="cefr-level" data-level="B2">
+            <strong>B2</strong>
+            <span>2500-5000</span>
+            <small>Fluidez espontánea</small>
+          </div>
+          <div class="cefr-level" data-level="C1">
+            <strong>C1</strong>
+            <span>5000-8000</span>
+            <small>Uso flexible</small>
+          </div>
+          <div class="cefr-level" data-level="C2">
+            <strong>C2</strong>
+            <span>8000+</span>
+            <small>Dominio total</small>
+          </div>
+        </div>
+      </section>
+
+      <!-- Core Principles -->
+      <section class="principles-section">
+        <h2>Principios fundamentales</h2>
+        
+        <div class="principle-cards">
+          <div class="principle-card">
+            <h3>Output &gt; Input</h3>
+            <p>Hablar y escribir retiene ~90% vs solo leer/escuchar ~20%. La pirámide de aprendizaje de Edgar Dale lo confirma.</p>
+            <small class="principle-action">&rarr; Empieza a hablar y escribir desde el día 1</small>
+          </div>
+
+          <div class="principle-card">
+            <h3>Repetición Espaciada</h3>
+            <p>La curva de Ebbinghaus muestra que olvidamos rápido al inicio. Revisar en intervalos crecientes forma memoria a largo plazo.</p>
+            <small class="principle-action">&rarr; 5min, 30min, 12h, 1d, 2d, 4d, 7d, 15d</small>
+          </div>
+
+          <div class="principle-card">
+            <h3>Contexto, no listas</h3>
+            <p>Las palabras aisladas se olvidan. En contexto (oraciones, historias, conversaciones) se quedan.</p>
+            <small class="principle-action">&rarr; Aprende con ejemplos reales y situaciones</small>
+          </div>
+
+          <div class="principle-card">
+            <h3>Interés como motor</h3>
+            <p>"The only way to do great work is to love what you do." — Usa materiales que te gusten.</p>
+            <small class="principle-action">&rarr; Series, música, artículos técnicos, lo que te enganche</small>
+          </div>
+
+          <div class="principle-card">
+            <h3>IA como entrenador</h3>
+            <p>No uses IA para que aprenda por ti. Úsala para que te pregunte, corrija, desafíe y te obligue a producir.</p>
+            <small class="principle-action">&rarr; Configura un AI Coach con reglas claras</small>
+          </div>
+
+          <div class="principle-card">
+            <h3>Ciclos mínimos</h3>
+            <p>Habla 2-3 min &rarr; corrige 1-2 errores &rarr; repite mejorado. Mucho mejor que recibir 10 correcciones a la vez.</p>
+            <small class="principle-action">&rarr; Pequeños loops con feedback inmediato</small>
+          </div>
+        </div>
+      </section>
+
+      <!-- Weekly Plan -->
+      <section class="weekly-section">
+        <h2>Plan semanal mínimo</h2>
+        <p class="section-desc">No necesitas 2 horas al día. 20-30 minutos consistentes ganan a sesiones intensas irregulares.</p>
+        
+        <div class="weekly-grid">
+          <div class="day-card">
+            <span class="day-label">Lunes</span>
+            <strong>Speaking</strong>
+            <p>15 min oral + 10 min corrección</p>
+          </div>
+          <div class="day-card">
+            <span class="day-label">Martes</span>
+            <strong>Reading</strong>
+            <p>1 artículo corto, extraer 5-10 expresiones</p>
+          </div>
+          <div class="day-card">
+            <span class="day-label">Miércoles</span>
+            <strong>Simulación</strong>
+            <p>Conversación o entrevista sobre el mismo tema</p>
+          </div>
+          <div class="day-card">
+            <span class="day-label">Jueves</span>
+            <strong>Review</strong>
+            <p>Quiz y flashcards del material de la semana</p>
+          </div>
+          <div class="day-card">
+            <span class="day-label">Viernes</span>
+            <strong>Writing</strong>
+            <p>Escribe un email/resumen, revisa 2 veces</p>
+          </div>
+          <div class="day-card">
+            <span class="day-label">Sábado</span>
+            <strong>Consolidación</strong>
+            <p>Revisar errores frecuentes de la semana</p>
+          </div>
+          <div class="day-card">
+            <span class="day-label">Domingo</span>
+            <strong>Listening</strong>
+            <p>Ver contenido en inglés, tomar notas</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Training Loops -->
+      <section class="loops-section">
+        <h2>Loops de entrenamiento con IA</h2>
+        <p class="section-desc">No uses IA como traductor. Diseña circuitos de práctica que te obliguen a producir.</p>
+
+        <div class="loop-cards">
+          <div class="loop-card">
+            <h3>Input en 4 pasos</h3>
+            <ol>
+              <li>Lee/escucha sin traducir</li>
+              <li>IA explica dificultades y pregunta</li>
+              <li>Tú resumes en inglés</li>
+              <li>IA corrige y hace follow-up</li>
+            </ol>
+          </div>
+
+          <div class="loop-card">
+            <h3>Escritura en 3 etapas</h3>
+            <ol>
+              <li>Escribe tu primer borrador</li>
+              <li>IA marca 3-5 problemas clave</li>
+              <li>Reescribes y comparas con versión mejorada</li>
+            </ol>
+          </div>
+
+          <div class="loop-card">
+            <h3>Speaking mini-loop</h3>
+            <ol>
+              <li>Habla 2-3 minutos</li>
+              <li>Recibe 1-2 correcciones</li>
+              <li>Repite versión corregida inmediatamente</li>
+            </ol>
+          </div>
+
+          <div class="loop-card">
+            <h3>Absorción de vocabulario</h3>
+            <ol>
+              <li>Aprende expresiones nuevas hoy</li>
+              <li>Crea oraciones el mismo día</li>
+              <li>IA te examina en 2-3 días</li>
+              <li>Las usas en nuevo contexto en 1 semana</li>
+            </ol>
+          </div>
+
+          <div class="loop-card">
+            <h3>Reutilización de material</h3>
+            <p>Un solo artículo/video sirve para:</p>
+            <ol>
+              <li>Comprensión</li>
+              <li>Extracción de vocab</li>
+              <li>Dictado</li>
+              <li>Resumen oral</li>
+              <li>Imitación escrita</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- Key Mindset -->
+      <section class="mindset-section">
+        <h2>Mentalidad correcta</h2>
+        <div class="mindset-quotes">
+          <blockquote>
+            "Los que se esfuerzan demasiado no llegan lejos. Consistencia &gt; intensidad."
+          </blockquote>
+          <blockquote>
+            "Enjoy what you are doing! — Si no disfrutas el proceso, cambia el método, no abandones el objetivo."
+          </blockquote>
+          <blockquote>
+            "Aprender inglés debería ser algo natural, como aprendiste español de niño."
+          </blockquote>
+        </div>
+        <div class="mindset-tips">
+          <p>[+] Usa materiales que te interesen genuinamente</p>
+          <p>[+] Permite errores — la práctica activa es la clave</p>
+          <p>[+] 20-30 min diarios &gt; 3 horas un sábado</p>
+          <p>[+] Crea un ambiente inmersivo (celular en inglés, YouTube en inglés)</p>
+          <p>[-] No te compares con nativos, compárate con tu yo de hace un mes</p>
+          <p>[-] No sacrifiques sueño para estudiar — baja el rendimiento</p>
+          <p>[-] No dependas solo de traducción — piensa en inglés</p>
+        </div>
+      </section>
+
+      <footer class="method-footer">
+        <p>
+          Fuente: <a href="https://github.com/byoungd/English-level-up-tips" target="_blank" rel="noopener">English Level Up Tips by byoungd</a> 
+          &middot; Contenido resumido y adaptado para hispanohablantes.
+        </p>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

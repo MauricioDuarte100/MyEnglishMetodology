@@ -29,75 +29,58 @@ type ProviderError = {
 
 export const POST: APIRoute = async ({ request }) => {
     if (GEMINI_KEYS.length === 0 && !OPENROUTER_KEY) {
-        return new Response(JSON.stringify({ error: 'No API keys configured' }), { status: 500 });
+        return new Response(JSON.stringify({ error: 'No hay claves de API configuradas en el servidor.' }), { status: 500 });
     }
 
     try {
         const body = await request.json();
-        const { category, language, topic, level } = body;
+        const { category, topic, level } = body;
 
         let prompt = '';
-        if (category === 'custom') {
-            if (language === 'ru') {
-                prompt = `Genera un diálogo simulando preguntas y respuestas detalladas en ruso (nivel ${level}) sobre el tema: "${topic || 'General'}".
-        CRÍTICO: El diálogo debe ser extenso, con **8 a 12 intercambios** entre dos o más personajes. Las intervenciones (preguntas y respuestas) no deben ser oraciones cortas, sino **respuestas y explicaciones largas**, con al menos 2 o 3 oraciones completas por turno.
-        CRÍTICO: El usuario no sabe leer cirílico bien. Debes escribir la pronunciación fonética como se leería en ESPAÑOL (ejemplo: "privet" = "priviet", "kak dela" = "kak dila"). NO USES IPA.
-        Devuelve ÚNICAMENTE un objeto JSON con esta estructura exacta, sin texto adicional:
+        if (category === 'custom' || !category) {
+            prompt = `Genera un diálogo interactivo de práctica en inglés americano coloquial y natural (nivel CEFR ${level || 'intermedio B1-B2'}) sobre el tema: "${topic || 'Situación cotidiana o laboral'}".
+OBJETIVO PEDAGÓGICO: Desarrollar oído real, vocabulario de alta frecuencia, expresiones idiomáticas y soltura conversacional para hispanohablantes.
+ESTILO Y TONO: Inglés americano auténtico y moderno, con contracciones naturales como gonna, wanna, gotta, kinda, chillin', I mean, you know, no problem, got it.
+
+REQUISITOS OBLIGATORIOS:
+1. El diálogo debe tener entre 6 y 10 intervenciones alternadas entre dos o más personajes.
+2. Cada intervención debe tener 1 a 3 oraciones completas y realistas.
+3. La pronunciación fonética ("phonetic") debe estar escrita como se pronunciaría en ESPAÑOL latino (NO uses símbolos IPA complejos). Ejemplos: "What are you up to?" -> "wát ar iu áp tu?", "I'm gonna grab some coffee" -> "aim góna grab sam cófi".
+4. La traducción al español ("spanish") debe sonar natural y conversacional, no robótica palabra por palabra.
+5. Incluye una lista de 4 a 8 palabras o modismos clave ("difficultWords") con su explicación en español y ejemplo.
+
+Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura exacta, sin bloques markdown de texto alrededor:
+{
+    "title": "Título en Inglés (Traducción en Español)",
+    "segments": [
         {
-            "title": "Título en Ruso (Traducción al Español)",
-            "segments": [
-                {
-                    "speaker": "Personaje 1",
-                    "russian": "Привет, как дела?",
-                    "phonetic": "Priviet, kak dila?",
-                    "spanish": "Hola, ¿cómo estás?"
-                }
-            ],
-            "difficultWords": [
-                {"word": "Привет", "definition": "Hola", "example": "Привет, Анна"}
-            ]
-        }`;
-            } else {
-                prompt = `Genera un diálogo de práctica en inglés americano coloquial (nivel ${level}) sobre el tema: "${topic || 'General'}".
-        OBJETIVO: enseñar vocabulario frecuente, escucha real, gramática simple y pronunciación práctica para una persona hispanohablante.
-        TONO: natural, juvenil y urbano de Estados Unidos, con contracciones reales como gonna, wanna, gotta, ain't, lemme, tryna, kinda, chillin'. Evita caricaturizar dialectos o glorificar violencia; usa el registro como entrenamiento de oído cotidiano.
-        CRÍTICO: El diálogo debe tener 8 a 12 intercambios. Cada intervención debe tener 2 a 4 oraciones completas, mezclando frases cortas naturales con explicaciones útiles.
-        CRÍTICO: NO uses IPA. La fonética debe estar escrita como se leería en ESPAÑOL, con acento americano urbano y palabras conectadas. Ejemplos: "What are you going to do?" = "wára iu góna du?", "I ain't got time" = "ai eint gat taim", "believe" = "biliv".
-        CRÍTICO: La traducción al español debe sonar natural, no literal palabra por palabra.
-        Devuelve ÚNICAMENTE un objeto JSON con esta estructura exacta, sin texto adicional:
+            "speaker": "Nombre / Rol",
+            "english": "Oración en inglés real...",
+            "phonetic": "Guía de pronunciación fonética en español...",
+            "spanish": "Traducción natural al español..."
+        }
+    ],
+    "difficultWords": [
         {
-            "title": "Título en Inglés (Traducción al Español)",
-            "segments": [
-                {
-                    "speaker": "Personaje 1",
-                    "english": "Yo, what are you doing? I ain't got time.",
-                    "phonetic": "iou, wára iu dú-in? ai eint gat taim.",
-                    "spanish": "Oye, ¿qué estás haciendo? No tengo tiempo."
-                }
-            ],
-            "difficultWords": [
-                {"word": "gonna", "definition": "forma coloquial de going to / voy a", "example": "I'm gonna call you later."},
-                {"word": "ain't", "definition": "negación coloquial: am not / is not / are not / have not", "example": "I ain't ready yet."}
-            ]
-        }`;
-            }
+            "word": "expresión/palabra",
+            "definition": "Significado y uso en español",
+            "example": "Ejemplo corto en inglés"
+        }
+    ]
+}`;
         } else {
-            let promptKey = category;
-            if (language === 'ru') {
-                promptKey = `${category}_ru`;
+            const promptKey = category as keyof typeof READING_CONFIG.prompts;
+            if (!READING_CONFIG.prompts[promptKey]) {
+                return new Response(JSON.stringify({ error: 'Categoría de lectura no válida' }), { status: 400 });
             }
-
-            if (!promptKey || !READING_CONFIG.prompts[promptKey as keyof typeof READING_CONFIG.prompts]) {
-                return new Response(JSON.stringify({ error: 'Invalid category or language config' }), { status: 400 });
-            }
-
-            prompt = READING_CONFIG.prompts[promptKey as keyof typeof READING_CONFIG.prompts];
+            prompt = READING_CONFIG.prompts[promptKey];
         }
 
         let successfulResponse;
         let usedConfig = '';
         const errors: ProviderError[] = [];
 
+        // 1. Try Gemini Keys
         for (const key of GEMINI_KEYS) {
             for (const model of GEMINI_MODELS) {
                 if (successfulResponse) break;
@@ -110,7 +93,7 @@ export const POST: APIRoute = async ({ request }) => {
                             contents: [{ parts: [{ text: prompt }] }],
                             generationConfig: {
                                 responseMimeType: 'application/json',
-                                temperature: 0.8
+                                temperature: 0.75
                             }
                         })
                     });
@@ -118,7 +101,6 @@ export const POST: APIRoute = async ({ request }) => {
                     if (response.ok) {
                         successfulResponse = await response.json();
                         usedConfig = `${model} (Google Gemini)`;
-                        console.log(`Success with: ${usedConfig}`);
                         break;
                     }
 
@@ -139,6 +121,7 @@ export const POST: APIRoute = async ({ request }) => {
             }
         }
 
+        // 2. Try OpenRouter Fallback
         if (!successfulResponse && OPENROUTER_KEY) {
             for (const model of OPENROUTER_MODELS) {
                 if (successfulResponse) break;
@@ -155,7 +138,7 @@ export const POST: APIRoute = async ({ request }) => {
                         body: JSON.stringify({
                             model,
                             messages: [{ role: 'user', content: prompt }],
-                            temperature: 0.8,
+                            temperature: 0.75,
                             response_format: { type: 'json_object' }
                         })
                     });
@@ -163,7 +146,6 @@ export const POST: APIRoute = async ({ request }) => {
                     if (response.ok) {
                         successfulResponse = await response.json();
                         usedConfig = `${model} (OpenRouter)`;
-                        console.log(`Success with: ${usedConfig}`);
                         break;
                     }
 
@@ -186,56 +168,59 @@ export const POST: APIRoute = async ({ request }) => {
 
         if (!successfulResponse) {
             return new Response(JSON.stringify({
-                error: 'No se pudo generar el texto con las API keys configuradas',
-                details: errors.slice(-6)
+                error: 'No se pudo generar el contenido con las API keys disponibles.',
+                details: errors.slice(-4)
             }), { status: 500 });
         }
 
-        let generatedText;
-        // Handle different response formats
+        let generatedText = '';
         if (successfulResponse.choices && successfulResponse.choices[0]?.message?.content) {
-            // OpenRouter / OpenAI format
             generatedText = successfulResponse.choices[0].message.content;
         } else if (successfulResponse.candidates && successfulResponse.candidates[0]?.content?.parts?.[0]?.text) {
-            // Google Gemini format
             generatedText = successfulResponse.candidates[0].content.parts[0].text;
         }
 
         if (!generatedText) {
-            return new Response(JSON.stringify({ error: 'No text generated', debug: successfulResponse }), { status: 500 });
+            return new Response(JSON.stringify({ error: 'Respuesta vacía del modelo de IA.' }), { status: 500 });
         }
 
-        // Process output
+        // Parse JSON output safely
         let result;
         const jsonMatch = generatedText.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
 
         try {
-            let cleanContent = jsonMatch ? jsonMatch[0] : generatedText;
+            const cleanContent = jsonMatch ? jsonMatch[0] : generatedText;
             const parsed = JSON.parse(cleanContent.trim());
 
-            // Handle both legacy (text) and new (segments) formats
             if (parsed.segments) {
                 result = parsed;
-            } else {
+            } else if (parsed.text) {
                 result = {
+                    title: parsed.title || 'Practice Reading',
                     text: parsed.text,
                     difficultWords: parsed.difficultWords || []
                 };
+            } else {
+                result = parsed;
             }
         } catch (e) {
-            result = { text: generatedText.trim(), difficultWords: [] };
+            result = {
+                title: 'Dialogue Practice',
+                text: generatedText.trim(),
+                difficultWords: []
+            };
         }
 
-        return new Response(JSON.stringify({ ...result, _debug_config: usedConfig }), {
+        return new Response(JSON.stringify({ ...result, _model: usedConfig }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
 
     } catch (error) {
-        console.error('Server error:', error);
-        return new Response(JSON.stringify({ error: 'Server error', details: String(error) }), { status: 500 });
+        console.error('Server error in /api/generate:', error);
+        return new Response(JSON.stringify({ error: 'Error interno en el servidor', details: String(error) }), { status: 500 });
     }
-}
+};
 
 async function safeJson(response: Response) {
     try {

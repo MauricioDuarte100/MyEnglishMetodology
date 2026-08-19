@@ -1,0 +1,376 @@
+---
+import '../styles/global.css';
+---
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pronunciación | VOCAB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="logo-area">
+        <a href="/" class="logo">
+          <span>VOCAB</span>
+          <small>ENGLISH METHODOLOGY</small>
+        </a>
+      </div>
+      <nav class="top-nav">
+        <a href="/" class="nav-link">Práctica</a>
+        <a href="/methodology" class="nav-link">Metodología</a>
+        <a href="/pronunciation" class="nav-link active">Pronunciación</a>
+        <a href="/resources" class="nav-link">Recursos</a>
+        <a href="/ai-coach" class="nav-link">IA Coach</a>
+      </nav>
+    </header>
+
+    <main class="main pronunciation-page">
+      <section class="method-hero">
+        <h1>Guía de Pronunciación</h1>
+        <p class="hero-subtitle">
+          Domina los sonidos del inglés americano. Cada fonema explicado para hispanohablantes.
+          <br><small>Ref: <a href="https://www.youtube.com/playlist?list=PL9BB1D7256440E08B" target="_blank" rel="noopener">Teach Reading with Phonics - American English</a></small>
+        </p>
+      </section>
+
+      <!-- Tips Banner -->
+      <section class="tips-banner">
+        <div class="tip-rotate" id="tipRotate">
+          <p><strong>Tip:</strong> La diferencia entre "ship" [ʃɪp] y "sheep" [ʃiːp] es la duración de la vocal</p>
+        </div>
+      </section>
+
+      <!-- Vowels -->
+      <section class="phoneme-section">
+        <h2>Vocales (Vowels)</h2>
+        <p class="section-desc">El inglés tiene ~15 sonidos vocálicos vs 5 en español. Esta es la mayor fuente de confusión.</p>
+        
+        <div class="phoneme-grid" id="vowelGrid">
+          <div class="phoneme-card" data-ipa="ɑ">
+            <span class="phoneme-symbol">/ɑ/</span>
+            <span class="phoneme-example">cop, hot</span>
+            <span class="phoneme-hint">Como "aaa" en el doctor</span>
+            <button class="phoneme-play" data-word="cop">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="ə">
+            <span class="phoneme-symbol">/ə/</span>
+            <span class="phoneme-example">the, about</span>
+            <span class="phoneme-hint">La "e" más relajada. Sonido más común del inglés</span>
+            <button class="phoneme-play" data-word="about">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="ʌ">
+            <span class="phoneme-symbol">/ʌ/</span>
+            <span class="phoneme-example">cup, but</span>
+            <span class="phoneme-hint">Boca de [ə], sonido de [ɑ]</span>
+            <button class="phoneme-play" data-word="cup">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="u">
+            <span class="phoneme-symbol">/uː/</span>
+            <span class="phoneme-example">boot, food</span>
+            <span class="phoneme-hint">Como la "u" española pero más larga</span>
+            <button class="phoneme-play" data-word="boot">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="ʊ">
+            <span class="phoneme-symbol">/ʊ/</span>
+            <span class="phoneme-example">book, put</span>
+            <span class="phoneme-hint">Boca de [ə], sonido de [u] — más corta</span>
+            <button class="phoneme-play" data-word="book">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="i">
+            <span class="phoneme-symbol">/iː/</span>
+            <span class="phoneme-example">beat, see</span>
+            <span class="phoneme-hint">Como "i" española pero más larga y tensa</span>
+            <button class="phoneme-play" data-word="beat">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="ɪ">
+            <span class="phoneme-symbol">/ɪ/</span>
+            <span class="phoneme-example">bit, sit</span>
+            <span class="phoneme-hint">Como "ih" de sorpresa — corta y relajada</span>
+            <button class="phoneme-play" data-word="bit">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="eɪ">
+            <span class="phoneme-symbol">/eɪ/</span>
+            <span class="phoneme-example">make, day</span>
+            <span class="phoneme-hint">Como "ei" al contestar "¿wéi?"</span>
+            <button class="phoneme-play" data-word="make">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="ɛ">
+            <span class="phoneme-symbol">/ɛ/</span>
+            <span class="phoneme-example">head, bed</span>
+            <span class="phoneme-hint">"E" abierta, como en "yes"</span>
+            <button class="phoneme-play" data-word="head">Audio</button>
+          </div>
+          <div class="phoneme-card highlight-hard" data-ipa="æ">
+            <span class="phoneme-symbol">/æ/</span>
+            <span class="phoneme-example">cat, man</span>
+            <span class="phoneme-hint">[!] NO existe en español. Entre "a" y "e"</span>
+            <button class="phoneme-play" data-word="cat">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="ɔ">
+            <span class="phoneme-symbol">/ɔː/</span>
+            <span class="phoneme-example">law, all</span>
+            <span class="phoneme-hint">"O" abierta, tipo "ao"</span>
+            <button class="phoneme-play" data-word="law">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="aʊ">
+            <span class="phoneme-symbol">/aʊ/</span>
+            <span class="phoneme-example">now, how</span>
+            <span class="phoneme-hint">Como "au" de dolor</span>
+            <button class="phoneme-play" data-word="now">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="aɪ">
+            <span class="phoneme-symbol">/aɪ/</span>
+            <span class="phoneme-example">bite, my</span>
+            <span class="phoneme-hint">Como "ai" (I love you = ai lov iu)</span>
+            <button class="phoneme-play" data-word="bite">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="ɔɪ">
+            <span class="phoneme-symbol">/ɔɪ/</span>
+            <span class="phoneme-example">boy, toy</span>
+            <span class="phoneme-hint">De [ɔ] desliza a [ɪ]</span>
+            <button class="phoneme-play" data-word="boy">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="əʊ">
+            <span class="phoneme-symbol">/oʊ/</span>
+            <span class="phoneme-example">go, no</span>
+            <span class="phoneme-hint">De [ə] desliza a [ʊ], como "ou"</span>
+            <button class="phoneme-play" data-word="go">Audio</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Consonants -->
+      <section class="phoneme-section">
+        <h2>Consonantes (Consonants)</h2>
+        <p class="section-desc">Los sonidos que NO existen en español están marcados con [!]. Estos requieren práctica especial.</p>
+        
+        <div class="phoneme-grid" id="consonantGrid">
+          <div class="phoneme-card highlight-hard" data-ipa="θ">
+            <span class="phoneme-symbol">/θ/</span>
+            <span class="phoneme-example">think, thanks</span>
+            <span class="phoneme-hint">[!] Lengua entre dientes + soplar como [s]</span>
+            <button class="phoneme-play" data-word="think">Audio</button>
+          </div>
+          <div class="phoneme-card highlight-hard" data-ipa="ð">
+            <span class="phoneme-symbol">/ð/</span>
+            <span class="phoneme-example">the, this</span>
+            <span class="phoneme-hint">[!] Lengua entre dientes + vibrar como [z]</span>
+            <button class="phoneme-play" data-word="this">Audio</button>
+          </div>
+          <div class="phoneme-card highlight-hard" data-ipa="v">
+            <span class="phoneme-symbol">/v/</span>
+            <span class="phoneme-example">very, love</span>
+            <span class="phoneme-hint">[!] Morder labio inferior + vibrar (≠ b española)</span>
+            <button class="phoneme-play" data-word="very">Audio</button>
+          </div>
+          <div class="phoneme-card highlight-hard" data-ipa="r">
+            <span class="phoneme-symbol">/r/</span>
+            <span class="phoneme-example">red, run</span>
+            <span class="phoneme-hint">[!] Lengua curvada atrás, NUNCA vibra</span>
+            <button class="phoneme-play" data-word="red">Audio</button>
+          </div>
+          <div class="phoneme-card highlight-hard" data-ipa="ʒ">
+            <span class="phoneme-symbol">/ʒ/</span>
+            <span class="phoneme-example">vision, pleasure</span>
+            <span class="phoneme-hint">[!] Como "sh" pero vibrando</span>
+            <button class="phoneme-play" data-word="vision">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="z">
+            <span class="phoneme-symbol">/z/</span>
+            <span class="phoneme-example">zoo, rose</span>
+            <span class="phoneme-hint">Como [s] vibrando las cuerdas vocales</span>
+            <button class="phoneme-play" data-word="zoo">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="ʃ">
+            <span class="phoneme-symbol">/ʃ/</span>
+            <span class="phoneme-example">she, ship</span>
+            <span class="phoneme-hint">Como pedir silencio "shhh"</span>
+            <button class="phoneme-play" data-word="she">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="tʃ">
+            <span class="phoneme-symbol">/tʃ/</span>
+            <span class="phoneme-example">check, church</span>
+            <span class="phoneme-hint">Como "ch" en español</span>
+            <button class="phoneme-play" data-word="check">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="dʒ">
+            <span class="phoneme-symbol">/dʒ/</span>
+            <span class="phoneme-example">just, age</span>
+            <span class="phoneme-hint">Como "y" argentina suave / "zh"</span>
+            <button class="phoneme-play" data-word="just">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="ŋ">
+            <span class="phoneme-symbol">/ŋ/</span>
+            <span class="phoneme-example">sing, ring</span>
+            <span class="phoneme-hint">Como la "n" en "tengo" (nasal)</span>
+            <button class="phoneme-play" data-word="sing">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="w">
+            <span class="phoneme-symbol">/w/</span>
+            <span class="phoneme-example">web, want</span>
+            <span class="phoneme-hint">"U" muy rápida antes de vocal</span>
+            <button class="phoneme-play" data-word="web">Audio</button>
+          </div>
+          <div class="phoneme-card" data-ipa="j">
+            <span class="phoneme-symbol">/j/</span>
+            <span class="phoneme-example">yes, you</span>
+            <span class="phoneme-hint">Como "i" rápida, tipo "y" española</span>
+            <button class="phoneme-play" data-word="yes">Audio</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Minimal Pairs Practice -->
+      <section class="minimal-pairs-section">
+        <h2>Pares Mínimos (Minimal Pairs)</h2>
+        <p class="section-desc">Practica distinguir sonidos que suenan similares. Esto entrena tu oído para el inglés real.</p>
+        
+        <div class="pairs-grid" id="pairsGrid">
+          <div class="pair-card">
+            <div class="pair-words">
+              <button class="pair-word" data-word="ship">ship /ʃɪp/</button>
+              <span class="pair-vs">vs</span>
+              <button class="pair-word" data-word="sheep">sheep /ʃiːp/</button>
+            </div>
+            <span class="pair-focus">Foco: ɪ vs iː (corta vs larga)</span>
+          </div>
+          <div class="pair-card">
+            <div class="pair-words">
+              <button class="pair-word" data-word="bit">bit /bɪt/</button>
+              <span class="pair-vs">vs</span>
+              <button class="pair-word" data-word="beat">beat /biːt/</button>
+            </div>
+            <span class="pair-focus">Foco: ɪ vs iː</span>
+          </div>
+          <div class="pair-card">
+            <div class="pair-words">
+              <button class="pair-word" data-word="cat">cat /kæt/</button>
+              <span class="pair-vs">vs</span>
+              <button class="pair-word" data-word="cut">cut /kʌt/</button>
+            </div>
+            <span class="pair-focus">Foco: æ vs ʌ</span>
+          </div>
+          <div class="pair-card">
+            <div class="pair-words">
+              <button class="pair-word" data-word="thin">thin /θɪn/</button>
+              <span class="pair-vs">vs</span>
+              <button class="pair-word" data-word="tin">tin /tɪn/</button>
+            </div>
+            <span class="pair-focus">Foco: θ vs t</span>
+          </div>
+          <div class="pair-card">
+            <div class="pair-words">
+              <button class="pair-word" data-word="van">van /væn/</button>
+              <span class="pair-vs">vs</span>
+              <button class="pair-word" data-word="ban">ban /bæn/</button>
+            </div>
+            <span class="pair-focus">Foco: v vs b</span>
+          </div>
+          <div class="pair-card">
+            <div class="pair-words">
+              <button class="pair-word" data-word="rice">rice /raɪs/</button>
+              <span class="pair-vs">vs</span>
+              <button class="pair-word" data-word="lice">lice /laɪs/</button>
+            </div>
+            <span class="pair-focus">Foco: r vs l</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Connected Speech -->
+      <section class="connected-section">
+        <h2>Habla Conectada (Connected Speech)</h2>
+        <p class="section-desc">Por esto no entiendes a los nativos aunque conoces todas las palabras. Los sonidos cambian en contexto.</p>
+        
+        <div class="connected-grid">
+          <div class="connected-card">
+            <h4>Linking</h4>
+            <p class="connected-example">turn off &rarr; tur-<strong>noff</strong></p>
+            <small>Consonante final se une a vocal siguiente</small>
+          </div>
+          <div class="connected-card">
+            <h4>Elision</h4>
+            <p class="connected-example">next day &rarr; nex<strong>-</strong>day</p>
+            <small>Se eliminan consonantes en grupos difíciles</small>
+          </div>
+          <div class="connected-card">
+            <h4>Reduction (Schwa)</h4>
+            <p class="connected-example">to, for, of &rarr; /tə/, /fər/, /əv/</p>
+            <small>Palabras funcionales se reducen en habla rápida</small>
+          </div>
+          <div class="connected-card">
+            <h4>Contractions</h4>
+            <p class="connected-example">gonna, wanna, gotta</p>
+            <small>going to, want to, got to &rarr; formas coloquiales</small>
+          </div>
+          <div class="connected-card">
+            <h4>Flapping (American T)</h4>
+            <p class="connected-example">water &rarr; wa<strong>d</strong>er, better &rarr; be<strong>d</strong>er</p>
+            <small>La "t" entre vocales suena como "d" suave en USA</small>
+          </div>
+          <div class="connected-card">
+            <h4>Assimilation</h4>
+            <p class="connected-example">ten bikes &rarr; te<strong>m</strong> bikes</p>
+            <small>Un sonido se adapta al que le sigue</small>
+          </div>
+        </div>
+      </section>
+
+      <!-- Practice Video -->
+      <section class="video-section">
+        <h2>Video recomendado</h2>
+        <p class="section-desc">Para entender habla rápida nativa, este video es esencial:</p>
+        <a href="https://www.youtube.com/watch?v=D6_qpaSxAQc" target="_blank" rel="noopener" class="video-link">
+          Understand Native English Speakers with this Advanced Listening Lesson
+        </a>
+        <p style="margin-top: 1rem; color: var(--text-muted);">
+          También: <a href="https://www.youtube.com/playlist?list=PL9BB1D7256440E08B" target="_blank" rel="noopener">Teach Reading with Phonics - Full Playlist</a>
+        </p>
+      </section>
+
+      <footer class="method-footer">
+        <p>Fuente: <a href="https://github.com/byoungd/English-level-up-tips" target="_blank" rel="noopener">English Level Up Tips - Speaking Chapter</a></p>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    // TTS for pronunciation practice
+    document.querySelectorAll('.phoneme-play, .pair-word').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const word = (btn as HTMLElement).dataset.word || (btn.textContent || '').split(' ')[0];
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.8;
+        speechSynthesis.speak(utterance);
+      });
+    });
+
+    // Rotate tips
+    const tips = [
+      'La diferencia entre "ship" [ʃɪp] y "sheep" [ʃiːp] es la duración de la vocal',
+      'La "th" NO existe en español. Pon la lengua entre los dientes',
+      'La "v" inglesa: muerde tu labio inferior (≠ "b")',
+      'La "r" americana: lengua curvada atrás, NUNCA vibra',
+      'El schwa [ə] es el sonido más común del inglés',
+      'Palabras de contenido se acentúan, funcionales se reducen',
+      '"Water" en USA suena "wader" (American flapping T)',
+      'Di en VOZ ALTA. Practicar en silencio no entrena los músculos',
+    ];
+    let tipIdx = 0;
+    const tipEl = document.getElementById('tipRotate');
+    setInterval(() => {
+      tipIdx = (tipIdx + 1) % tips.length;
+      if (tipEl) tipEl.innerHTML = `<p><strong>Tip:</strong> ${tips[tipIdx]}</p>`;
+    }, 6000);
+  </script>
+</body>
+</html>

@@ -1,49 +1,83 @@
 # MyEnglishMetodology
 
-Este proyecto es una plataforma interactiva diseñada para la práctica intensiva y progresiva del idioma inglés, enfocada en la retención a largo plazo mediante la combinación de inteligencia artificial y técnicas de aprendizaje activo.
+Plataforma interactiva de aprendizaje intensivo de inglés, basada en principios de ciencia cognitiva y la metodología de [English Level Up Tips](https://github.com/byoungd/English-level-up-tips) de byoungd.
 
-## Metodología de Práctica Intensiva
+## Filosofía de Aprendizaje
 
-La plataforma se basa en un flujo de trabajo cíclico que permite pasar de la comprensión pasiva a la ejecución activa del idioma. No se trata solo de memorizar palabras aisladas, sino de comprender su uso en contextos reales.
+> "Consistencia > Intensidad. El 75% del inglés diario se compone de las primeras 1000 palabras."
 
-### Fase 1: Lectura Dinámica y Contextualización (IA)
-Utiliza modelos de lenguaje avanzados para generar diálogos y textos personalizados sobre cualquier tema de interés. 
-- Cada texto incluye transcripción fonética adaptada al español para facilitar la pronunciación inmediata.
-- Identificación dinámica de palabras complejas con sus definiciones.
+La plataforma combina:
+- **Repetición espaciada real (SRS)**: Curva de Ebbinghaus (5min, 30min, 12h, 1d, 2d, 4d, 7d, 15d).
+- **Loop de Refuerzo de Errores**: Detección automática y práctica aislada de términos fallados 2+ veces.
+- **Producción activa sobre consumo pasivo** (Pirámide de Aprendizaje de Edgar Dale).
+- **Vocabulario contextualizado**: Pronunciación fonética adaptada para hispanohablantes y ejemplos de la vida real.
+- **IA como entrenador situacional**: Diálogos con audio y escenarios laborales reales (IT, Daily Standup, Entrevistas, Slang).
 
-### Fase 2: Construcción de Vocabulario (Flashcards)
-Uso de tarjetas didácticas con un sistema de temporizador integrado (5 a 40 minutos).
-- Fomenta la agilidad mental bajo presión de tiempo.
-- Seguimiento visual del progreso por sesión.
+---
 
-### Fase 3: Dictado y Escritura (Typing Mode)
-Práctica de escritura exacta basada en oraciones de ejemplo.
-- Ayuda a fijar la ortografía y la estructura gramatical.
-- Incluye un sistema de pistas progresivas para evitar bloqueos durante el aprendizaje.
+## 🎯 Módulos de Práctica
 
-### Fase 4: Comprensión y Coherencia (Fill in the Blanks)
-Ejercicios clásicos de completar oraciones utilizando un banco de palabras.
-- Obliga al estudiante a analizar el contexto sintáctico y semántico de la oración para elegir la opción correcta.
+### 📇 1. Tarjetas (Flashcards)
+Sistema de tarjetas con animación 3D, atajos de teclado (`Espacio` girar, `←/→` navegar, `1` repasar, `2` dominado, `A` audio), nivel SRS dinámico, hooks mentales mnemotécnicos y temporizador de estudio.
 
-### Fase 5: Asociación Rápida (Matching Game)
-Refuerzo de la memoria asociativa mediante el emparejamiento de términos y definiciones.
-- Focalizado en la velocidad de reconocimiento.
+### 🧠 2. Quiz Activo
+Evaluación rápida con opciones contextuales, discriminadores inteligentes, pronunciación auditiva y corrección inmediata.
 
-### Fase 6: Evaluación y Diagnóstico (Quiz)
-Fase final de comprobación de conocimientos donde se evalúa la comprensión total del set de palabras trabajado.
+### ✍️ 3. Escribir (Active Typing)
+Práctica de escritura exacta con pistas progresivas letra por letra ("💡 Dar una Pista"), contador de letras y síntesis de voz de la oración completa.
 
-## Tecnologías Utilizadas
+### 📝 4. Completar (Fill in the Blanks)
+Ejercicios tipo *Cloze* en oraciones con audio integrado por línea y retroalimentación en tiempo real.
 
-- Astro: Framework para la estructura y rendimiento.
-- JavaScript: Lógica de interacción y estado de la aplicación.
-- Tailwind CSS: Estilo visual y diseño responsivo.
-- API de Inteligencia Artificial: Generación dinámica de contenidos de lectura.
+### 🎯 5. Parejas (Matching)
+Cuadrícula interactiva de 4 parejas (8 cartas) para fijar asociaciones rápidas entre el inglés y su concepto en español.
 
-## Requisitos de Instalación
+### 🎧 6. Dictado (Listening & Writing)
+Entrenamiento de oído nativo con velocidades graduables (0.6x lenta, 0.8x normal, 1.0x rápida, 1.2x nativa), comparador de diferencias y repetición asistida.
 
-1. Clonar el repositorio.
-2. Ejecutar npm install para instalar las dependencias.
-3. Configurar las variables de entorno para la conexión con el motor de IA.
-4. Iniciar el servidor de desarrollo con npm run dev.
+### 📖 7. Lectura e Inmersión con IA
+Generador de diálogos situacionales en inglés americano real con pronunciación fonética para hispanohablantes, reproducción de audio continua o por frase, y definiciones interactivas al hacer clic en palabras difíciles.
 
-Esta metodología busca eliminar la brecha entre "saber" una regla gramatical y "usarla" en una conversación o texto real.
+---
+
+## 🧭 Páginas de Apoyo
+
+- **📚 Metodología (`/methodology`)**: Principios cognitivos, pirámide de aprendizaje, niveles CEFR y plan semanal de estudio.
+- **🗣️ Pronunciación (`/pronunciation`)**: Tabla fonética interactiva con audio, pares mínimos y reglas de habla conectada (*linking*, *flapping T*, *reductions*).
+- **🔗 Recursos (`/resources`)**: Curaduría de canales de YouTube, podcasts, series y lecturas recomendadas por nivel.
+- **🤖 IA Coach (`/ai-coach`)**: Prompts optimizados para configurar ChatGPT / Claude / Gemini como entrenadores personales.
+
+---
+
+## 📊 Datasets Incluidos
+
+| Archivo | Categoría | Contenido |
+|---------|-----------|-----------|
+| `core-1000.js` | **1K** | Las 1000 palabras más usadas (75% del inglés diario) |
+| `advanced-1000.js` | **2K** | Siguientes 1000 palabras para fluidez y precisión B2 |
+| `technical.js` | **Tech & Biz** | Vocabulario de IT, Ciberseguridad, Data Analytics, Negocios y Finanzas |
+| `urban-slang.js` | **Slang USA** | Contracciones cotidianas (*gonna, wanna, ain't, finna*) y modismos urbanos |
+| `tongue-twisters.js` | **Twisters** | Trabalenguas y rimas para entrenar dicción, ritmo y *flow* |
+| `spaced-repetition.ts` | **SRS Engine** | Algoritmo de intervalos de Ebbinghaus y estimación de niveles CEFR |
+| `learning-methodology.ts` | **Framework** | Principios, loops de 4 pasos y planes semanales |
+
+---
+
+## 🚀 Instalación y Uso
+
+```bash
+git clone <repo>
+npm install  # o bun install
+cp .env.example .env  # Agrega tus claves de Gemini u OpenRouter (opcional para IA Reading)
+npm run dev
+```
+
+---
+
+## ⚙️ Variables de Entorno
+
+```env
+GEMINI_API_KEY=tu_clave_gemini
+GEMINI_API_KEY_BACKUP=clave_backup
+OPENROUTER_API_KEY=tu_clave_openrouter
+```

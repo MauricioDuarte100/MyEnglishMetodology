@@ -1,0 +1,268 @@
+---
+import '../styles/global.css';
+---
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IA Coach | VOCAB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="logo-area">
+        <a href="/" class="logo">
+          <span>VOCAB</span>
+          <small>ENGLISH METHODOLOGY</small>
+        </a>
+      </div>
+      <nav class="top-nav">
+        <a href="/" class="nav-link">Práctica</a>
+        <a href="/methodology" class="nav-link">Metodología</a>
+        <a href="/pronunciation" class="nav-link">Pronunciación</a>
+        <a href="/resources" class="nav-link">Recursos</a>
+        <a href="/ai-coach" class="nav-link active">IA Coach</a>
+      </nav>
+    </header>
+
+    <main class="main ai-coach-page">
+      <section class="method-hero">
+        <h1>Tu Coach de IA</h1>
+        <p class="hero-subtitle">
+          Configura tu entrenador personal de inglés. Copia los prompts y pégalos en tu modelo preferido.
+          <br><small>Basado en el capítulo AI 2026 de <a href="https://github.com/byoungd/English-level-up-tips" target="_blank">English Level Up Tips</a></small>
+        </p>
+      </section>
+
+      <!-- Setup Section -->
+      <section class="coach-section">
+        <h2>Paso 1: Configura tu English Coach (Gemini Gem / ChatGPT Project)</h2>
+        <p class="section-desc">Copia estas instrucciones y pégalas como "Custom Instructions" o "Gem Instructions":</p>
+        
+        <div class="prompt-block" id="coachPrompt">
+          <button class="copy-btn" data-target="coachPromptText">Copiar</button>
+          <pre id="coachPromptText">You are my English Level-Up Coach.
+I am a Spanish native speaker, currently around B1-B2 level.
+My goal is to noticeably improve listening, speaking, reading, and writing in 12 weeks, with priority on speaking and workplace English.
+
+Rules:
+1) Default to English. Use brief Spanish only for complex grammar or when I explicitly ask.
+2) Keep each session to 20-30 minutes.
+3) Every session must include: warm-up, input material, output task, error correction, recap.
+4) Prioritize high-frequency, transferable, real-world errors over nitpicking.
+5) Give me ONE clear small goal per session (e.g., "today we only practice disagreeing naturally").
+6) Track my common mistakes and review them weekly.
+7) If I say "start today's lesson", go directly into the next session.
+8) If I upload articles, emails, meeting notes, or video subtitles, turn them into lesson materials.
+9) Always push me to actively produce output. Do NOT lecture me.
+10) End every session with: expressions learned, key mistakes, homework, next session focus.</pre>
+        </div>
+      </section>
+
+      <!-- Prompt Templates -->
+      <section class="coach-section">
+        <h2>Paso 2: Prompts para cada habilidad</h2>
+
+        <div class="prompt-category">
+          <h3>Oral Practice (Speaking)</h3>
+          
+          <div class="prompt-block">
+            <span class="prompt-label">Conversación general</span>
+            <button class="copy-btn" data-target="sp1">Copiar</button>
+            <pre id="sp1">Please act as my speaking coach. We will have a natural English conversation for 15 minutes. Keep your turns short. Interrupt me only if my sentence is hard to understand. After every 3 rounds, give me brief feedback on grammar, word choice, and pronunciation priorities.</pre>
+          </div>
+
+          <div class="prompt-block">
+            <span class="prompt-label">Meeting de trabajo</span>
+            <button class="copy-btn" data-target="sp2">Copiar</button>
+            <pre id="sp2">Let's simulate a weekly sync meeting in English. You are my teammate. Ask me one question at a time about project progress, blockers, next steps, and risks. After each answer, tell me how to make it sound more natural and concise.</pre>
+          </div>
+
+          <div class="prompt-block">
+            <span class="prompt-label">Entrevista técnica</span>
+            <button class="copy-btn" data-target="sp3">Copiar</button>
+            <pre id="sp3">Act as an interviewer for an international tech company. Ask me common behavioral and role-specific questions one by one. Challenge vague answers and ask follow-up questions. After each round, tell me how to make my answer clearer and more convincing.</pre>
+          </div>
+
+          <div class="prompt-block">
+            <span class="prompt-label">IELTS Speaking</span>
+            <button class="copy-btn" data-target="sp4">Copiar</button>
+            <pre id="sp4">Act as an IELTS speaking examiner. Ask me one question at a time in Part 1, Part 2, and Part 3 order. After each answer, give me short feedback on fluency, grammar, vocabulary, and how to sound more natural.</pre>
+          </div>
+        </div>
+
+        <div class="prompt-category">
+          <h3>Listening Practice</h3>
+          
+          <div class="prompt-block">
+            <span class="prompt-label">Quiz de comprensión</span>
+            <button class="copy-btn" data-target="ls1">Copiar</button>
+            <pre id="ls1">Create a quiz about this material. Start with 5 easy comprehension questions, then 5 harder inference questions. After each answer, do not tell me only whether it is right or wrong. Explain why.</pre>
+          </div>
+
+          <div class="prompt-block">
+            <span class="prompt-label">Flashcards de audio</span>
+            <button class="copy-btn" data-target="ls2">Copiar</button>
+            <pre id="ls2">Create flashcards about this material. Focus on high-frequency vocabulary, collocations, and sentence patterns useful in real conversations, not just rare difficult words.</pre>
+          </div>
+
+          <div class="prompt-block">
+            <span class="prompt-label">Dictation exercise</span>
+            <button class="copy-btn" data-target="ls3">Copiar</button>
+            <pre id="ls3">Turn this transcript into a listening lesson for me. Split it into short chunks. First hide the full text. Let me transcribe one chunk at a time, then compare my answer with the original and explain the key misses.</pre>
+          </div>
+        </div>
+
+        <div class="prompt-category">
+          <h3>Reading Practice</h3>
+          
+          <div class="prompt-block">
+            <span class="prompt-label">Lectura guiada</span>
+            <button class="copy-btn" data-target="rd1">Copiar</button>
+            <pre id="rd1">Help me study this article with Guided Learning. Do not translate everything directly. First ask me what I think the main idea is. Then guide me paragraph by paragraph, explain key expressions, and quiz me on the logic.</pre>
+          </div>
+
+          <div class="prompt-block">
+            <span class="prompt-label">Extraer vocabulario</span>
+            <button class="copy-btn" data-target="rd2">Copiar</button>
+            <pre id="rd2">From this article, extract 10 expressions worth actively learning. For each one, explain meaning, register, typical collocations, and give me one fill-in-the-blank exercise.</pre>
+          </div>
+
+          <div class="prompt-block">
+            <span class="prompt-label">Resumen evaluado</span>
+            <button class="copy-btn" data-target="rd3">Copiar</button>
+            <pre id="rd3">I will summarize this article in English. After that, score my summary from 0 to 10 for accuracy, clarity, and vocabulary, and tell me what I missed.</pre>
+          </div>
+        </div>
+
+        <div class="prompt-category">
+          <h3>Writing Practice</h3>
+          
+          <div class="prompt-block">
+            <span class="prompt-label">Feedback de escritura</span>
+            <button class="copy-btn" data-target="wr1">Copiar</button>
+            <pre id="wr1">Here is my draft. Do not rewrite everything immediately. First identify the most important mistakes and weak sentences. Explain why they are weak. Then ask me to revise them myself. After I revise, show me a stronger version for comparison.</pre>
+          </div>
+
+          <div class="prompt-block">
+            <span class="prompt-label">Email profesional</span>
+            <button class="copy-btn" data-target="wr2">Copiar</button>
+            <pre id="wr2">Improve this email for a professional but natural tone. Give me three versions: polite, concise, and more direct. Then explain when each version is appropriate.</pre>
+          </div>
+
+          <div class="prompt-block">
+            <span class="prompt-label">IELTS Writing</span>
+            <button class="copy-btn" data-target="wr3">Copiar</button>
+            <pre id="wr3">Grade this essay using the IELTS Writing Task 2 criteria. Give me band estimates for Task Response, Coherence and Cohesion, Lexical Resource, and Grammatical Range and Accuracy. Then tell me the top 3 changes that would most improve my score.</pre>
+          </div>
+        </div>
+
+        <div class="prompt-category">
+          <h3>Vocabulary & Grammar</h3>
+          
+          <div class="prompt-block">
+            <span class="prompt-label">Comparación de sinónimos</span>
+            <button class="copy-btn" data-target="vg1">Copiar</button>
+            <pre id="vg1">Explain the difference between [word1], [word2], and [word3] in Spanish and English. Give me common collocations, natural examples, and 5 short exercises.</pre>
+          </div>
+
+          <div class="prompt-block">
+            <span class="prompt-label">Micro-lección de errores</span>
+            <button class="copy-btn" data-target="vg2">Copiar</button>
+            <pre id="vg2">Based on my recent mistakes, design a 15-minute micro lesson on the grammar points I keep getting wrong. Keep it focused and practical.</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Workflow -->
+      <section class="coach-section">
+        <h2>Paso 3: Flujo de trabajo recomendado</h2>
+        <div class="workflow-grid">
+          <div class="workflow-step">
+            <span class="step-num">1</span>
+            <strong>Gem/Project para curso largo</strong>
+            <p>Fija tu objetivo, nivel, reglas de entrenamiento y formato de feedback</p>
+          </div>
+          <div class="workflow-step">
+            <span class="step-num">2</span>
+            <strong>Gemini Live / Voice para oral</strong>
+            <p>10-15 min diarios, escenarios de alta frecuencia</p>
+          </div>
+          <div class="workflow-step">
+            <span class="step-num">3</span>
+            <strong>Guided Learning para lectura</strong>
+            <p>No pidas respuestas directas. Que te guíe paso a paso</p>
+          </div>
+          <div class="workflow-step">
+            <span class="step-num">4</span>
+            <strong>Quiz / Flashcards para revisar</strong>
+            <p>Convierte videos, artículos y podcasts en material de repaso</p>
+          </div>
+          <div class="workflow-step">
+            <span class="step-num">5</span>
+            <strong>Canvas / Write para escritura</strong>
+            <p>Emails, ensayos, reportes. Revisa, no dejes que la IA escriba por ti</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Key Rules -->
+      <section class="coach-section">
+        <h2>Reglas fundamentales al usar IA</h2>
+        <div class="rules-grid">
+          <div class="rule-card">
+            <strong>Coach, no generador</strong>
+            <p>Que te pregunte, corrija y desafíe. No que haga el trabajo por ti.</p>
+          </div>
+          <div class="rule-card">
+            <strong>Un objetivo por sesión</strong>
+            <p>"Hoy solo practico expresar desacuerdo" &gt; "quiero mejorar todo"</p>
+          </div>
+          <div class="rule-card">
+            <strong>Expón problemas</strong>
+            <p>Primero habla o escribe tú. Luego pide corrección. Nunca al revés.</p>
+          </div>
+          <div class="rule-card">
+            <strong>Deja registro</strong>
+            <p>Errores comunes, buenas expresiones, patrones. Tu lista de repaso personal.</p>
+          </div>
+          <div class="rule-card">
+            <strong>Verifica</strong>
+            <p>La IA puede equivocarse. Usa diccionarios y corpus para expresiones clave.</p>
+          </div>
+          <div class="rule-card">
+            <strong>Privacidad</strong>
+            <p>No subas datos personales sensibles ni información confidencial.</p>
+          </div>
+        </div>
+      </section>
+
+      <footer class="method-footer">
+        <p>Basado en el capítulo "Utilizar IA para aprender (2026)" de <a href="https://github.com/byoungd/English-level-up-tips" target="_blank" rel="noopener">English Level Up Tips</a></p>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    // Copy functionality
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = (btn as HTMLElement).dataset.target || '';
+        const text = document.getElementById(targetId)?.textContent || '';
+        const original = btn.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          btn.textContent = 'Copiado';
+          setTimeout(() => { btn.textContent = original; }, 2000);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

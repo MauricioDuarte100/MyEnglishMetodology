@@ -3,320 +3,730 @@ import '../styles/global.css';
 ---
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="English Vocabulary Learning App - Practice and master essential English vocabulary">
-  <title>VOCAB | English Learning</title>
+  <meta name="description" content="Plataforma de aprendizaje intensivo de inglés basada en ciencia cognitiva, repetición espaciada, mnemotecnia de impacto y producción activa.">
+  <title>VOCAB | Metodología de Inglés</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
   <div class="app">
     <!-- Header -->
     <header class="header">
-      <div class="logo">
-        <span>VOCAB</span>
-        <small>1K -> 2K -> IT</small>
+      <div class="logo-area">
+        <a href="/" class="logo">
+          <span>VOCAB</span>
+          <small>ENGLISH METHODOLOGY</small>
+        </a>
       </div>
-      <button class="session-btn" id="startSessionBtn">Sesión guiada</button>
-      
-      <div class="controls-container">
-        <div class="language-selector">
-          <select id="languageSelect" class="lang-select">
-            <option value="en">🇺🇸 English</option>
-            <option value="ru">🇷🇺 Русский</option>
-          </select>
-        </div>
+
+      <nav class="top-nav">
+        <a href="/" class="nav-link active">Práctica</a>
+        <a href="/methodology" class="nav-link">Metodología</a>
+        <a href="/pronunciation" class="nav-link">Pronunciación</a>
+        <a href="/resources" class="nav-link">Recursos</a>
+        <a href="/ai-coach" class="nav-link">IA Coach</a>
+      </nav>
+
+      <div class="header-actions">
+        <button class="session-btn" id="startSessionBtn" title="Inicia un ciclo guiado por todos los modos">
+          <span>Sesión Guiada</span>
+        </button>
 
         <div class="set-container" id="setContainer">
-          <select id="setSelect" class="set-select">
+          <select id="setSelect" class="set-select" aria-label="Seleccionar Set">
             <option value="1">Set 1 (1-50)</option>
           </select>
         </div>
-      </div>
 
-      <div class="progress-indicator" id="progressIndicator">
-        <span class="progress-text">0 / 0</span>
-        <div class="progress-bar">
-          <div class="progress-fill" id="progressFill"></div>
+        <div class="progress-indicator" id="progressIndicator" title="Progreso del set actual">
+          <span class="progress-text">0 / 50</span>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
         </div>
-      </div>
 
-      <button class="profile-btn" id="profileBtn" title="Perfil">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
-      </button>
+        <button class="profile-btn" id="profileBtn" title="Ver mi progreso y nivel CEFR">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          <span class="profile-badge-dot hidden" id="loopDotIndicator"></span>
+        </button>
+      </div>
     </header>
 
-    <!-- Session Overlay -->
+    <!-- Session Overlay (When guided session is running) -->
     <div class="session-overlay hidden" id="sessionOverlay">
+      <div class="session-header-info">
+        <span class="session-kicker">SESION DE ENTRENAMIENTO GUIADA</span>
+        <span class="session-timer-text" id="sessionTimerText">00:00</span>
+      </div>
       <div class="session-stepper" id="sessionStepper"></div>
       <div class="session-controls">
-        <button class="session-control-btn next" id="nextPhaseBtn">Siguiente Fase</button>
-        <button class="session-control-btn exit" id="exitSessionBtn">Salir</button>
+        <button class="session-control-btn next" id="nextPhaseBtn">Siguiente Fase &rarr;</button>
+        <button class="session-control-btn exit" id="exitSessionBtn">Finalizar Sesión</button>
       </div>
     </div>
 
-    <!-- Main Content -->
+    <!-- Main Content Area -->
     <main class="main">
-      <!-- Category Selection -->
+      <!-- Category Selection Navigation -->
       <nav class="category-nav" id="categoryNav">
         <button class="category-btn active" data-category="core">
           <span class="category-icon">1K</span>
-          <span class="category-label">Core 1000</span>
+          <div class="category-info">
+            <span class="category-label">Core 1000</span>
+            <small class="category-sub">75% del inglés cotidiano</small>
+          </div>
         </button>
         <button class="category-btn" data-category="advanced">
           <span class="category-icon">2K</span>
-          <span class="category-label">Advanced</span>
+          <div class="category-info">
+            <span class="category-label">Advanced 1000</span>
+            <small class="category-sub">Fluidez y precisión B2</small>
+          </div>
         </button>
         <button class="category-btn" data-category="technical">
-          <span class="category-icon">T</span>
-          <span class="category-label">Technical</span>
+          <span class="category-icon">IT</span>
+          <div class="category-info">
+            <span class="category-label">IT & Business</span>
+            <small class="category-sub">Cyber, Tech, Finanzas</small>
+          </div>
         </button>
         <button class="category-btn" data-category="slang">
-          <span class="category-icon">🔥</span>
-          <span class="category-label">Urban Slang</span>
+          <span class="category-icon">US</span>
+          <div class="category-info">
+            <span class="category-label">Urban Slang</span>
+            <small class="category-sub">Oído real USA & modismos</small>
+          </div>
         </button>
         <button class="category-btn" data-category="twisters">
-          <span class="category-icon">👅</span>
-          <span class="category-label">Twisters</span>
+          <span class="category-icon">TW</span>
+          <div class="category-info">
+            <span class="category-label">Twisters</span>
+            <small class="category-sub">Dicción, flow y ritmo</small>
+          </div>
+        </button>
+        <button class="category-btn loop-btn" id="loopFilterBtn" data-category="loop" title="Palabras que has fallado 2+ veces para repaso urgente">
+          <span class="category-icon">LP</span>
+          <div class="category-info">
+            <span class="category-label">Loop de Errores</span>
+            <small class="category-sub" id="loopWordsCountLabel">0 palabras</small>
+          </div>
         </button>
       </nav>
 
-      <!-- Mode Selection -->
-      <div class="mode-nav" id="modeNav">
-        <button class="mode-btn active" data-mode="flashcard">Tarjetas</button>
-        <button class="mode-btn" data-mode="quiz">Quiz</button>
-        <button class="mode-btn" data-mode="typing">Escribir</button>
-        <button class="mode-btn" data-mode="fillblanks">Completar</button>
-        <button class="mode-btn" data-mode="matching">Parejas</button>
-        <button class="mode-btn" data-mode="reading">Lectura</button>
+      <!-- Subcategory filters for Technical category -->
+      <div class="tech-subnav hidden" id="techSubnav">
+        <span class="tech-subnav-label">Áreas técnicas:</span>
+        <div class="tech-chips">
+          <label class="tech-chip"><input type="checkbox" data-sub="it" checked> IT & Software</label>
+          <label class="tech-chip"><input type="checkbox" data-sub="cybersecurity" checked> Cybersecurity</label>
+          <label class="tech-chip"><input type="checkbox" data-sub="dataAnalytics" checked> Data Analytics</label>
+          <label class="tech-chip"><input type="checkbox" data-sub="business" checked> Business</label>
+          <label class="tech-chip"><input type="checkbox" data-sub="finance" checked> Finance</label>
+        </div>
       </div>
 
-      <!-- Flashcard Mode -->
+      <!-- Mode Selection Bar -->
+      <div class="mode-nav" id="modeNav">
+        <button class="mode-btn active" data-mode="flashcard">
+          Tarjetas
+        </button>
+        <button class="mode-btn" data-mode="rsvp">
+          RSVP Lectura
+        </button>
+        <button class="mode-btn" data-mode="scenario">
+          Simulador
+        </button>
+        <button class="mode-btn" data-mode="grammar">
+          Pasado y Perfecto
+        </button>
+        <button class="mode-btn" data-mode="quiz">
+          Quiz
+        </button>
+        <button class="mode-btn" data-mode="typing">
+          Escribir
+        </button>
+        <button class="mode-btn" data-mode="fillblanks">
+          Completar
+        </button>
+        <button class="mode-btn" data-mode="matching">
+          Parejas
+        </button>
+        <button class="mode-btn" data-mode="listening">
+          Dictado
+        </button>
+        <button class="mode-btn" data-mode="reading">
+          Lectura IA
+        </button>
+      </div>
+
+      <!-- 1. Flashcard Mode -->
       <section class="flashcard-container" id="flashcardMode">
         <div class="method-strip" aria-label="Ruta de aprendizaje">
-          <div class="method-step active">
+          <div class="method-step active" data-step="core">
             <span class="method-kicker">Base</span>
             <strong>Primeras 1000</strong>
           </div>
-          <div class="method-step">
+          <div class="method-step" data-step="advanced">
             <span class="method-kicker">Fluidez</span>
             <strong>Segundas 1000</strong>
           </div>
-          <div class="method-step">
-            <span class="method-kicker">Especialización</span>
-            <strong>IT + Cyber</strong>
+          <div class="method-step" data-step="technical">
+            <span class="method-kicker">Profesional</span>
+            <strong>IT + Cyber + Biz</strong>
           </div>
-          <div class="method-step">
+          <div class="method-step" data-step="slang">
             <span class="method-kicker">Oído real</span>
-            <strong>Slang USA</strong>
+            <strong>Slang & Street USA</strong>
+          </div>
+          <div class="method-step" data-step="twisters">
+            <span class="method-kicker">Dicción</span>
+            <strong>Twisters & Ritmo</strong>
           </div>
         </div>
-        
+
         <div class="flashcard-header">
-           <div class="flashcard-counter">
-             Tarjeta <strong id="flashcardCurrentCount">1</strong> de <strong id="flashcardTotalCount">50</strong>
-           </div>
-           <div class="flashcard-timer">
-              <select id="timerSelect" class="timer-select">
-                 <option value="0">Sin tiempo límite</option>
-                 <option value="5">5 Minutos</option>
-                 <option value="10">10 Minutos</option>
-                 <option value="20">20 Minutos</option>
-                 <option value="40">40 Minutos</option>
-              </select>
-              <span id="timerDisplay" class="timer-display">--:--</span>
-              <button id="startTimerBtn" class="timer-btn">Iniciar</button>
-           </div>
-        </div>
-
-        <div class="flashcard" id="flashcard">
-          <div class="flashcard-front">
-            <!-- Loop Badge -->
-            <span class="loop-badge hidden" id="loopBadge">LOOP</span>
-
-            <!-- 1. Top: Russian Word (Big, Accent) -->
-            <div class="ru-word-main hidden" id="ruWordMain"></div>
-            
-            <!-- 2. Letter Breakdown (Cyrillic -> Latin) -->
-            <div class="ru-letter-breakdown hidden" id="ruLetterBreakdown"></div>
-
-            <!-- 3. Spanish Meaning -->
-            <div class="ru-meaning hidden" id="ruMeaning"></div>
-            
-            <!-- 4. Phonetic -->
-            <div class="ru-phonetic hidden" id="ruPhonetic"></div>
-            
-            <!-- 5. Audio Button -->
-            <button class="audio-btn-icon" id="flashcardAudioBtn" title="Escuchar">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
-              </svg>
-            </button>
-            
-            <!-- English Mode Fallback (Hidden for Russian) -->
-            <span class="word hidden" id="currentWord">eloquent</span>
-            <div class="word-meta hidden" id="wordMeta">
-              <span id="wordType">uso comun</span>
-              <span id="wordRegister">americano casual</span>
-            </div>
-            <span class="phonetic hidden" id="phonetic">/élokuent/</span>
-            
-            <span class="hint">Clic para ver significado, ejemplo y hook</span>
+          <div class="flashcard-counter">
+            Tarjeta <strong id="flashcardCurrentCount">1</strong> de <strong id="flashcardTotalCount">50</strong>
+            <span class="srs-badge" id="cardSrsBadge" title="Nivel en la curva de Ebbinghaus">Nuevo</span>
           </div>
-          <div class="flashcard-back">
-            <span class="definition" id="definition">fluent or persuasive in speaking or writing</span>
-            <span class="example" id="example">"She gave an eloquent speech about climate change."</span>
-            <div class="usage-panel" id="usagePanel">
-              <div>
-                <span class="usage-label">Como lo pensas</span>
-                <strong id="spanishCue">elocuente</strong>
-              </div>
-              <div>
-                <span class="usage-label">Como suena</span>
-                <strong id="soundCue">e-LO-kuent</strong>
-              </div>
-            </div>
-            
-            <!-- Dual Translation Container -->
-            <div class="translations-container">
-               <span class="translation-primary" id="translationPrimary">elocuente</span>
-               <span class="translation-secondary" id="translationSecondary"></span>
-            </div>
 
-            <div class="association-container">
-              <label for="associationInput">Mi hook mental</label>
-              <textarea id="associationInput" class="association-input" placeholder="Ej: suena como..., lo uso cuando..., imagen mental..."></textarea>
-            </div>
+          <div class="flashcard-timer-controls">
+            <select id="timerSelect" class="timer-select" aria-label="Temporizador de estudio">
+              <option value="0">Sin límite</option>
+              <option value="5">5 Minutos</option>
+              <option value="10">10 Minutos</option>
+              <option value="15">15 Minutos</option>
+              <option value="25">25 Min (Pomodoro)</option>
+            </select>
+            <span id="timerDisplay" class="timer-display">--:--</span>
+            <button id="startTimerBtn" class="timer-btn">Iniciar</button>
+            <button class="quick-test-btn" id="autoPlayFlashcardsBtn" title="Reproduce automáticamente cada 3s para repaso pasivo">Auto-Play (3s)</button>
           </div>
         </div>
+
+        <!-- The Interactive 3D Card -->
+        <div class="flashcard-wrapper">
+          <div class="flashcard" id="flashcard" role="button" tabindex="0" aria-label="Girar tarjeta">
+            <!-- Front Face -->
+            <div class="flashcard-front">
+              <div class="card-front-top">
+                <span class="loop-badge hidden" id="loopBadge">EN LOOP DE REPASO</span>
+                <div class="word-meta" id="wordMeta">
+                  <span class="meta-pill" id="wordType">palabra base</span>
+                  <span class="meta-pill register" id="wordRegister">americano común</span>
+                </div>
+              </div>
+
+              <div class="word-main-display">
+                <h2 class="word" id="currentWord">word</h2>
+                <div class="phonetic-row">
+                  <span class="phonetic" id="phonetic">/wórd/</span>
+                  <button class="audio-btn-icon" id="flashcardAudioBtn" title="Escuchar pronunciación nativa (Atajo: A)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="card-flip-prompt">
+                <span>Clic o [Espacio] para ver significado, mnemotecnia y ejemplo</span>
+              </div>
+            </div>
+
+            <!-- Back Face -->
+            <div class="flashcard-back">
+              <div class="back-translations">
+                <span class="translation-label">Significado en Español</span>
+                <h3 class="translation-primary" id="translationPrimary">traducción</h3>
+              </div>
+
+              <div class="back-definition-block">
+                <span class="definition-label">Definición en Inglés</span>
+                <p class="definition" id="definition">definition in english</p>
+              </div>
+
+              <!-- Vivid Mnemonic Anchor & Bizarre Image Box -->
+              <div class="mnemonic-box" id="mnemonicBox">
+                <div class="mnemonic-header">
+                  <span class="bizarre-tag">Mnemotecnia e Imagen Inverosímil</span>
+                  <span class="palace-room-tag" id="mnemonicPalace">Palacio Mental</span>
+                </div>
+                <div class="mnemonic-anchor" id="mnemonicAnchor">Anclaje Fonético: ...</div>
+                <p class="mnemonic-image" id="mnemonicImage">...</p>
+              </div>
+
+              <div class="back-example-block">
+                <div class="example-header">
+                  <span class="example-label">Ejemplo en Contexto Real</span>
+                  <button class="audio-btn-mini" id="flashcardExampleAudioBtn" title="Escuchar oración completa">
+                    Escuchar
+                  </button>
+                </div>
+                <p class="example" id="example">"Example sentence using the word."</p>
+              </div>
+
+              <div class="usage-panel" id="usagePanel">
+                <div class="usage-item">
+                  <span class="usage-label">Como lo piensas</span>
+                  <strong id="spanishCue">concepto</strong>
+                </div>
+                <div class="usage-item">
+                  <span class="usage-label">Como suena en español</span>
+                  <strong id="soundCue">wórd</strong>
+                </div>
+              </div>
+
+              <div class="association-container">
+                <label for="associationInput">
+                  <span>Mi hook mental personal</span>
+                  <small>Escribe una frase o anclaje adicional</small>
+                </label>
+                <textarea id="associationInput" class="association-input" placeholder="Ej: Me recuerda a..., rima con..., situación donde lo uso..."></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Controls -->
         <div class="flashcard-actions">
-          <button class="action-btn prev" id="prevBtn">
+          <button class="action-btn prev" id="prevBtn" title="Anterior [←]">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M15 18l-6-6 6-6" />
             </svg>
+            <span>Anterior</span>
           </button>
-          <button class="action-btn learning" id="learningBtn">Repasar</button>
-          <button class="action-btn know" id="knowBtn">Aprendido</button>
-          <button class="action-btn next" id="nextBtn">
+          
+          <button class="action-btn learning" id="learningBtn" title="Repasar pronto [1]">
+            <span>Repasar [1]</span>
+          </button>
+          
+          <button class="action-btn audio-action-btn" id="audioShortcutBtn" title="Escuchar pronunciación [A]">
+            <span>Audio [A]</span>
+          </button>
+
+          <button class="action-btn know" id="knowBtn" title="Dominado / Avanzar SRS [2]">
+            <span>Dominado [2]</span>
+          </button>
+          
+          <button class="action-btn next" id="nextBtn" title="Siguiente [→]">
+            <span>Siguiente</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 18l6-6-6-6" />
             </svg>
           </button>
         </div>
-        <div style="text-align: center; margin-top: 15px;">
-          <button class="action-btn quick-test-btn" id="autoPlayFlashcardsBtn">Test rápido (3s)</button>
+
+        <!-- Keyboard Shortcuts Hint Footer -->
+        <div class="keyboard-hints">
+          <span>Atajos: <kbd>Espacio</kbd> Girar &nbsp;|&nbsp; <kbd>&larr;</kbd> <kbd>&rarr;</kbd> Navegar &nbsp;|&nbsp; <kbd>1</kbd> Repasar &nbsp;|&nbsp; <kbd>2</kbd> Dominado &nbsp;|&nbsp; <kbd>A</kbd> Audio</span>
         </div>
       </section>
 
-      <!-- Quiz Mode -->
+      <!-- 2. RSVP Speed Reading Engine (Anti-Subvocalization & Phonetics) -->
+      <section class="rsvp-container hidden" id="rsvpMode">
+        <div class="mode-header-badge">
+          <h2>Lectura Rápida RSVP & Fonética en Tiempo Real</h2>
+          <p>Entrena tu velocidad visual, elimina la traducción interna fijando el punto ORP (rojo) y asimila la pronunciación figurada.</p>
+        </div>
+
+        <div class="rsvp-display-box">
+          <div class="rsvp-viewport">
+            <div class="rsvp-crosshair-top"></div>
+            <div class="rsvp-word-display">
+              <span class="rsvp-left" id="rsvpLeft">rea</span>
+              <span class="rsvp-orp" id="rsvpOrp">d</span>
+              <span class="rsvp-right" id="rsvpRight">ing</span>
+            </div>
+            <div class="rsvp-crosshair-bottom"></div>
+          </div>
+
+          <div class="rsvp-phonetic-bar" id="rsvpPhoneticBar">
+            <span class="rsvp-phonetic-text" id="rsvpPhoneticText">/ríd-ing/</span>
+            <span class="rsvp-meaning-text" id="rsvpMeaningText">Significado: leyendo / lectura</span>
+          </div>
+
+          <div class="rsvp-context-snippet" id="rsvpSnippet">
+            Presiona "Comenzar RSVP" para iniciar el flujo de alta velocidad sin traducir mentalmente.
+          </div>
+        </div>
+
+        <div class="rsvp-controls-panel">
+          <div class="rsvp-speed-slider-group">
+            <label for="rsvpSourceSelect">Fuente:</label>
+            <select id="rsvpSourceSelect" class="timer-select" style="min-width: 170px;">
+              <option value="vocab" selected>Vocabulario del Set</option>
+              <option value="grammar">Pasado vs Perfecto</option>
+              <option value="custom">Texto Personalizado</option>
+            </select>
+          </div>
+
+          <div class="rsvp-speed-slider-group">
+            <label for="rsvpWpmSlider">Velocidad:</label>
+            <input type="range" id="rsvpWpmSlider" class="rsvp-slider" min="150" max="650" step="25" value="350">
+            <span class="wpm-badge" id="rsvpWpmLabel">350 WPM</span>
+          </div>
+
+          <div class="rsvp-actions">
+            <button class="action-btn" id="rsvpToggleBtn">Comenzar RSVP</button>
+            <button class="action-btn" id="rsvpNextSentenceBtn">Siguiente Oración &rarr;</button>
+          </div>
+        </div>
+
+        <div class="custom-rsvp-input-box hidden" id="rsvpCustomBox" style="width: 100%; max-width: 680px; margin-top: 8px;">
+          <input type="text" id="rsvpCustomTextInput" class="typing-input" placeholder="Pega cualquier texto en inglés para leer a máxima velocidad..." style="width: 100%;">
+        </div>
+      </section>
+
+      <!-- 3. Professional Scenario Simulator Engine -->
+      <section class="scenario-container hidden" id="scenarioMode">
+        <div class="mode-header-badge">
+          <h2>Simulador de Escenarios Profesionales</h2>
+          <p>Toma de decisiones, asertividad técnica y comunicación bajo presión.</p>
+        </div>
+
+        <div class="scenario-card">
+          <div class="scenario-header-bar">
+            <select id="scenarioSelector" class="set-select" aria-label="Seleccionar Escenario" style="max-width: 320px;">
+              <option value="0">Respuesta a Incidente Crítico (SOC)</option>
+              <option value="1">Daily Standup de Alta Presión & Bloqueos</option>
+              <option value="2">Negociación Salarial y Beneficios</option>
+            </select>
+            <div class="scenario-score-meter">
+              Puntaje: <strong id="scenarioScoreValue">100</strong> / 100
+            </div>
+          </div>
+
+          <div class="scenario-briefing-box">
+            <div class="scenario-briefing-title" id="scenarioBriefingTitle">Briefing del Escenario:</div>
+            <p class="scenario-briefing-text" id="scenarioBriefingText">...</p>
+          </div>
+
+          <div class="scenario-dialogue-terminal">
+            <div class="scenario-speaker-header">
+              <span class="scenario-speaker-name" id="scenarioSpeakerName">Alex (VP of Engineering)</span>
+              <span class="scenario-speaker-context" id="scenarioSpeakerContext">War Room #incident-live</span>
+            </div>
+            <div class="scenario-dialogue-quote" id="scenarioDialogueQuote">
+              "We are seeing anomalous outbound traffic..."
+            </div>
+            <div class="scenario-question-title" id="scenarioQuestionTitle">
+              ¿Cómo respondes a la situación?
+            </div>
+          </div>
+
+          <div class="scenario-choices-list" id="scenarioChoicesList">
+            <!-- Choices injected via JS -->
+          </div>
+
+          <div class="scenario-feedback-box hidden" id="scenarioFeedbackBox">
+            <span class="scenario-feedback-title" id="scenarioFeedbackTitle"></span>
+            <p class="scenario-feedback-desc" id="scenarioFeedbackDesc"></p>
+            <button class="action-btn know" id="scenarioNextStepBtn" style="align-self: flex-start; margin-top: 6px;">Siguiente Decisión &rarr;</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Grammar Anti-Translation Engine (Past Simple vs Perfect - Latino Neutro) -->
+      <section class="grammar-container hidden" id="grammarMode">
+        <div class="mode-header-badge">
+          <h2>Anti-Traducción Mental: Pasado Simple vs Perfecto</h2>
+          <p>Supera la trampa más común de los hispanohablantes al traducir y domina la pronunciación de terminaciones -ed y participios.</p>
+        </div>
+
+        <div class="grammar-card">
+          <div class="grammar-filter-toolbar" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 12px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <select id="grammarCategoryFilter" class="set-select" aria-label="Filtrar por Área">
+                <option value="all" selected>Todas las Áreas (500+ Verbos)</option>
+                <option value="it-tech">IT, Cyber & Business</option>
+                <option value="everyday">Vida Cotidiana & Conversación</option>
+              </select>
+
+              <select id="grammarTenseFilter" class="set-select" aria-label="Filtrar por Tiempo">
+                <option value="all" selected>Todos los Tiempos</option>
+                <option value="past-simple">Pasado Simple</option>
+                <option value="present-perfect">Present Perfect</option>
+                <option value="present-perfect-continuous">Present Perfect Continuous</option>
+                <option value="past-perfect">Past Perfect</option>
+              </select>
+            </div>
+
+            <div style="display: flex; gap: 8px; align-items: center; flex: 1; max-width: 240px; min-width: 160px;">
+              <input type="text" id="grammarSearchInput" class="typing-input" placeholder="Buscar verbo..." style="padding: 6px 10px; font-size: 0.8rem; height: auto;">
+            </div>
+          </div>
+
+          <div class="grammar-header-row">
+            <span class="grammar-tense-badge" id="grammarTenseBadge">Present Perfect vs Past Simple</span>
+            <span class="grammar-counter-text">Patrón <strong id="grammarCurrentCount">1</strong> de <strong id="grammarTotalCount">500+</strong></span>
+          </div>
+
+          <div class="grammar-sentence-box">
+            <div class="grammar-english-row">
+              <div>
+                <div class="grammar-english-text" id="grammarEnglishText">"I have worked here for three years."</div>
+                <div class="grammar-phonetic-text" id="grammarPhoneticText">[aiv wórkt jír for zrí yírs]</div>
+              </div>
+              <button class="audio-btn-icon" id="grammarAudioBtn" title="Escuchar oración completa">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                </svg>
+              </button>
+            </div>
+            <div class="grammar-spanish-neutral" id="grammarSpanishNeutral">
+              Equivalente Latino: "Trabajo aquí hace tres años / Llevo tres años trabajando aquí."
+            </div>
+          </div>
+
+          <div class="grammar-boxes-grid">
+            <div class="grammar-trap-box">
+              <span class="grammar-trap-title">La Trampa Latina Común</span>
+              <p class="grammar-trap-desc" id="grammarTrapDesc">
+                Decir "I work here since three years" o "I worked here three years".
+              </p>
+            </div>
+
+            <div class="grammar-cognitive-box">
+              <span class="grammar-cognitive-title">Regla Anti-Traducción</span>
+              <p class="grammar-cognitive-desc" id="grammarCognitiveDesc">
+                Si la acción empezó en el pasado y SIGUE ocurriendo hoy, el inglés exige Present Perfect.
+              </p>
+            </div>
+          </div>
+
+          <div class="grammar-verb-breakdown">
+            <div class="verb-forms-list" id="grammarVerbForms">
+              <span>Base: <strong id="grammarVerbBase">work</strong></span> &rarr;
+              <span>Pasado: <strong id="grammarVerbPast">worked</strong></span> &rarr;
+              <span>Participio: <strong id="grammarVerbPart">worked</strong></span>
+            </div>
+            <span class="ed-pronunciation-badge" id="grammarEdBadge">Pronunciación -ed: [wórkt]</span>
+          </div>
+
+          <div class="grammar-actions-row">
+            <button class="action-btn prev" id="grammarPrevBtn">&larr; Anterior</button>
+            <button class="action-btn know" id="grammarAudioVerbBtn">Escuchar Verbo</button>
+            <button class="action-btn next" id="grammarNextBtn">Siguiente Patrón &rarr;</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Quiz Mode -->
       <section class="quiz-container hidden" id="quizMode">
-        <div class="quiz-question">
-          <span class="quiz-prompt">¿Qué significa:</span>
-          <span class="quiz-word" id="quizWord">eloquent</span>
-          <span class="quiz-phonetic" id="quizPhonetic">/élokuent/</span>
-          <button class="audio-btn-icon small" id="quizAudioBtn" title="Escuchar pronunciación">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
-            </svg>
-          </button>
+        <div class="mode-header-badge">
+          <h2>Quiz de Comprensión Activa</h2>
+          <p>Selecciona el significado correcto para consolidar la memoria de trabajo.</p>
         </div>
-        <div class="quiz-options" id="quizOptions">
-          <button class="quiz-option" data-index="0">Option 1</button>
-          <button class="quiz-option" data-index="1">Option 2</button>
-          <button class="quiz-option" data-index="2">Option 3</button>
-          <button class="quiz-option" data-index="3">Option 4</button>
-        </div>
-        <div class="quiz-feedback hidden" id="quizFeedback">
-          <span class="feedback-text"></span>
-          <button class="next-question-btn" id="nextQuestionBtn">Siguiente Pregunta</button>
-        </div>
-        <div class="quiz-score" id="quizScore">
-          <span>Puntaje: <strong id="scoreValue">0</strong> / <strong id="totalQuestions">0</strong></span>
+
+        <div class="quiz-card">
+          <div class="quiz-question">
+            <span class="quiz-prompt">¿Cuál es el significado de:</span>
+            <div class="quiz-word-row">
+              <h3 class="quiz-word" id="quizWord">word</h3>
+              <span class="quiz-phonetic" id="quizPhonetic">/wórd/</span>
+              <button class="audio-btn-icon small" id="quizAudioBtn" title="Escuchar pronunciación">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="quiz-options" id="quizOptions">
+            <button class="quiz-option" data-index="0">Opción 1</button>
+            <button class="quiz-option" data-index="1">Opción 2</button>
+            <button class="quiz-option" data-index="2">Opción 3</button>
+            <button class="quiz-option" data-index="3">Opción 4</button>
+          </div>
+
+          <div class="quiz-feedback hidden" id="quizFeedback">
+            <span class="feedback-text"></span>
+            <button class="next-question-btn" id="nextQuestionBtn">Siguiente Pregunta &rarr;</button>
+          </div>
+
+          <div class="quiz-score" id="quizScore">
+            <span>Puntaje: <strong id="scoreValue">0</strong> / <strong id="totalQuestions">0</strong></span>
+          </div>
         </div>
       </section>
 
-      <!-- Matching Mode -->
-      <section class="matching-container hidden" id="matchingMode">
-        <div class="matching-header">
-           <div class="matching-stats">
-              <span class="matching-stat">Parejas: <strong id="matchingScore">0</strong> / 4</span>
-           </div>
-        </div>
-        <div class="matching-grid" id="matchingGrid">
-           <!-- Cards injected via JS -->
-        </div>
-        <div class="matching-feedback hidden" id="matchingFeedback">
-            <span class="feedback-text">¡Nivel Completado!</span>
-            <button class="next-level-btn" id="nextLevelBtn">Siguiente Nivel</button>
-        </div>
-      </section>
-
-      <!-- Typing Mode -->
+      <!-- 5. Typing Mode (Active Production) -->
       <section class="typing-container hidden" id="typingMode">
-        <div class="typing-prompt">
-          <span class="typing-definition" id="typingDefinition">fluent or persuasive in speaking or writing</span>
-          <span class="typing-example" id="typingExample">"She gave an _______ speech about climate change."</span>
-          <div class="typing-format-hint" id="typingFormatHint">_ _ _ _ _ _ _ _</div>
+        <div class="mode-header-badge">
+          <h2>Escritura y Producción Exacta</h2>
+          <p>Escribe la palabra en inglés según el contexto y significado en español.</p>
         </div>
-        <div class="typing-input-wrapper">
-          <input type="text" class="typing-input" id="typingInput" placeholder="Escribe la palabra..." autocomplete="off">
-          <button class="typing-submit" id="typingSubmit">Comprobar</button>
-        </div>
-        <div class="typing-actions" style="margin-top: 10px; display: flex; gap: 10px; justify-content: center;">
-           <button class="action-btn" id="typingHintBtn">💡 Dar una Pista</button>
-           <button class="action-btn" id="typingListenBtn">🔊 Escuchar Oración</button>
-        </div>
-        <div class="typing-feedback hidden" id="typingFeedback">
-          <span class="feedback-text"></span>
-          <button class="next-word-btn" id="nextWordBtn">Siguiente Palabra</button>
+
+        <div class="typing-card">
+          <div class="typing-prompt">
+            <span class="typing-def-label">Significado en español:</span>
+            <h3 class="typing-definition" id="typingDefinition">traducción</h3>
+            <p class="typing-example" id="typingExample">"Example sentence with _______ blank."</p>
+            <div class="typing-format-hint" id="typingFormatHint">_ _ _ _ _ _ _ _</div>
+          </div>
+
+          <div class="typing-input-wrapper">
+            <input type="text" class="typing-input" id="typingInput" placeholder="Escribe la palabra exacta en inglés..." autocomplete="off" spellcheck="false">
+            <button class="typing-submit" id="typingSubmit">Comprobar</button>
+          </div>
+
+          <div class="typing-actions">
+            <button class="action-btn hint-btn" id="typingHintBtn">Dar una Pista (Letra)</button>
+            <button class="action-btn listen-btn" id="typingListenBtn">Escuchar Oración</button>
+          </div>
+
+          <div class="typing-feedback hidden" id="typingFeedback">
+            <span class="feedback-text"></span>
+            <button class="next-word-btn" id="nextWordBtn">Siguiente Palabra &rarr;</button>
+          </div>
         </div>
       </section>
 
-      <!-- Fill in the Blanks Mode -->
+      <!-- 6. Fill in the Blanks Mode -->
       <section class="fillblanks-container hidden" id="fillblanksMode">
-         <div class="fillblanks-header">
-           <h3 style="margin-bottom: 0.5rem;">¿Cuáles faltan?</h3>
-           <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Selecciona la palabra correcta para completar cada oración.</p>
-         </div>
-         <div class="fillblanks-content" id="fillblanksContent">
-            <!-- Selections injected here -->
-         </div>
-         <div class="fillblanks-actions" style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center;">
-             <button class="action-btn" id="generateBlanksBtn">🔃 Mezclar Otro</button>
-             <button class="action-btn know" id="fillblanksSubmit">Revisar Respuestas</button>
-         </div>
-         <div class="fillblanks-feedback hidden" id="fillblanksFeedback" style="margin-top: 1rem; text-align: center;">
-             <span class="feedback-text"></span>
-         </div>
+        <div class="mode-header-badge">
+          <h2>Completar en Contexto (Cloze Test)</h2>
+          <p>Selecciona la palabra adecuada para cada oración y entrena tu intuición gramatical.</p>
+        </div>
+
+        <div class="fillblanks-card">
+          <div class="fillblanks-content" id="fillblanksContent">
+            <!-- Dynamic selections injected here -->
+          </div>
+
+          <div class="fillblanks-actions">
+            <button class="action-btn" id="generateBlanksBtn">Mezclar Otro Grupo</button>
+            <button class="action-btn know" id="fillblanksSubmit">Comprobar Respuestas</button>
+          </div>
+
+          <div class="fillblanks-feedback hidden" id="fillblanksFeedback">
+            <span class="feedback-text"></span>
+          </div>
+        </div>
       </section>
 
-      <!-- Reading Mode -->
+      <!-- 7. Matching Mode (Memory & Speed Association) -->
+      <section class="matching-container hidden" id="matchingMode">
+        <div class="mode-header-badge">
+          <h2>Parejas Rápidas (Matching)</h2>
+          <p>Empareja cada palabra en inglés con su traducción al español.</p>
+        </div>
+
+        <div class="matching-header">
+          <div class="matching-stats">
+            <span class="matching-stat">Parejas encontradas: <strong id="matchingScore">0</strong> / 4</span>
+          </div>
+        </div>
+
+        <div class="matching-grid" id="matchingGrid">
+          <!-- Cards injected via JS -->
+        </div>
+
+        <div class="matching-feedback hidden" id="matchingFeedback">
+          <span class="feedback-text">Parejas completadas correctamente.</span>
+          <button class="next-level-btn" id="nextLevelBtn">Siguiente Ronda &rarr;</button>
+        </div>
+      </section>
+
+      <!-- 8. Listening / Dictation Mode -->
+      <section class="listening-container hidden" id="listeningMode">
+        <div class="mode-header-badge">
+          <h2>Dictado Activo (Listening & Writing)</h2>
+          <p>Entrena tu oído para el inglés real. Escucha, transcribe y comprueba.</p>
+        </div>
+
+        <div class="listening-controls-bar">
+          <div class="listening-stats">
+            <span>Aciertos: <strong id="dictCorrect">0</strong></span>
+            <span>Total: <strong id="dictTotal">0</strong></span>
+            <span>Precisión: <strong id="dictAccuracy">0%</strong></span>
+          </div>
+          <div class="listening-speed">
+            <label for="speechRate">Velocidad:</label>
+            <select id="speechRate" class="timer-select">
+              <option value="0.6">Lenta (0.6x)</option>
+              <option value="0.8" selected>Normal (0.8x)</option>
+              <option value="1.0">Rápida (1.0x)</option>
+              <option value="1.2">Nativa (1.2x)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="dictation-card" id="dictationCard">
+          <div class="dictation-prompt">
+            <button class="audio-btn-large" id="dictPlayBtn" title="Escuchar audio">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+              </svg>
+              <span>Clic para escuchar</span>
+            </button>
+            <div class="dictation-actions">
+              <button class="action-btn" id="dictRepeatBtn">Repetir</button>
+              <button class="action-btn" id="dictSlowBtn">En cámara lenta</button>
+            </div>
+          </div>
+
+          <div class="dictation-input-area">
+            <input type="text" class="typing-input" id="dictInput" placeholder="Escribe lo que escuchaste en inglés..." autocomplete="off">
+            <button class="typing-submit" id="dictSubmit">Comprobar</button>
+          </div>
+
+          <div class="dictation-feedback hidden" id="dictFeedback">
+            <div class="dict-answer">
+              <span class="dict-label">Tu respuesta:</span>
+              <span class="dict-user" id="dictUserAnswer"></span>
+            </div>
+            <div class="dict-answer">
+              <span class="dict-label">Texto correcto:</span>
+              <span class="dict-correct" id="dictCorrectAnswer"></span>
+            </div>
+            <div class="dict-diff" id="dictDiff"></div>
+            <button class="next-word-btn" id="dictNextBtn">Siguiente Dictado &rarr;</button>
+          </div>
+        </div>
+
+        <div class="listening-tip">
+          <p><strong>Tip de Oído Real:</strong> En inglés nativo las palabras se unen (linking y reductions). Intenta captar grupos de 2 o 3 palabras juntas en vez de traducir palabra por palabra.</p>
+        </div>
+      </section>
+
+      <!-- 9. Reading Mode (AI Dialogues & Real Situations) -->
       <section class="reading-container hidden" id="readingSection">
-        <div class="reading-header">
-          <h2 class="reading-title">Lectura y oído real</h2>
-          <p class="reading-subtitle">Diálogos en inglés americano coloquial con fonética escrita para hispanohablantes</p>
+        <div class="mode-header-badge">
+          <h2>Inmersión y Diálogos Reales con IA</h2>
+          <p>Genera conversaciones situacionales en inglés americano con fonética y traducción adaptada para hispanohablantes.</p>
         </div>
 
         <div class="custom-reading-form">
           <div class="form-group">
-            <label for="readingTopic">Tema (ej. Trabajo, Viajes):</label>
-            <input type="text" id="readingTopic" placeholder="Escribe un tema..." class="reading-input" value="Trabajo">
+            <label for="readingTopic">Tema o Escenario:</label>
+            <input type="text" id="readingTopic" placeholder="Ej: Daily Standup en IT, Pedir café en Starbucks, Entrevista..." class="reading-input" value="Tech Standup & Blockers">
+            <div class="topic-chips">
+              <button type="button" class="topic-chip" data-topic="Daily standup meeting & sprint blockers">Daily Standup IT</button>
+              <button type="button" class="topic-chip" data-topic="Job interview at a tech company">Entrevista Tech</button>
+              <button type="button" class="topic-chip" data-topic="Ordering fast food and street slang in NYC">NYC Slang y Comida</button>
+              <button type="button" class="topic-chip" data-topic="Salary negotiation and remote perks">Negociación Salarial</button>
+              <button type="button" class="topic-chip" data-topic="Airport security and baggage claim">Aeropuerto y Viaje</button>
+            </div>
           </div>
+
           <div class="form-group">
             <label for="readingLevel">Nivel de dificultad:</label>
             <select id="readingLevel" class="reading-select">
-              <option value="beginner">Principiante (A1-A2)</option>
-              <option value="intermediate" selected>Intermedio (B1-B2)</option>
-              <option value="advanced">Avanzado (C1-C2)</option>
+              <option value="A1-A2">Principiante (A1-A2)</option>
+              <option value="B1-B2" selected>Intermedio (B1-B2)</option>
+              <option value="C1-C2">Avanzado (C1-C2)</option>
             </select>
           </div>
         </div>
@@ -325,17 +735,25 @@ import '../styles/global.css';
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
           </svg>
-          Generar nuevo texto
+          Generar Diálogo con IA
         </button>
 
         <div class="reading-loading hidden" id="readingLoading">
           <div class="spinner"></div>
-          <span>Generando texto con IA...</span>
+          <span>Generando diálogo realista con fonética y vocabulario...</span>
         </div>
 
         <div class="reading-error hidden" id="readingError"></div>
 
         <div class="reading-text-container hidden" id="readingTextContainer">
+          <div class="reading-audio-bar">
+            <button class="reading-audio-btn" id="playFullDialogueBtn">
+              Reproducir Diálogo Completo
+            </button>
+            <button class="reading-audio-btn secondary" id="stopReadingAudioBtn">
+              Detener
+            </button>
+          </div>
           <div class="reading-text" id="readingTextContent"></div>
         </div>
 
@@ -344,76 +762,55 @@ import '../styles/global.css';
       </section>
     </main>
 
-    <!-- Filter Modal -->
-    <div class="modal hidden" id="filterModal">
-      <div class="modal-content">
-        <h3>Filtrar Vocabulario</h3>
-        <div class="filter-options">
-          <label class="filter-option">
-            <input type="checkbox" id="filterAll" checked> Todas
-          </label>
-          <label class="filter-option">
-            <input type="checkbox" id="filterLearning"> Estudiando
-          </label>
-          <label class="filter-option">
-            <input type="checkbox" id="filterMastered"> Aprendidas
-          </label>
-        </div>
-        <div class="subcategory-filter hidden" id="subcategoryFilter">
-          <h4>Technical Categories</h4>
-          <label class="filter-option">
-            <input type="checkbox" data-sub="business" checked> Business & Marketing
-          </label>
-          <label class="filter-option">
-            <input type="checkbox" data-sub="it" checked> IT & Cybersecurity
-          </label>
-          <label class="filter-option">
-            <input type="checkbox" data-sub="data" checked> Data Analytics
-          </label>
-          <label class="filter-option">
-            <input type="checkbox" data-sub="finance" checked> Finance
-          </label>
-        </div>
-        <button class="modal-close" id="closeFilterModal">Aplicar</button>
-      </div>
-    </div>
-
-    <!-- Profile Panel -->
+    <!-- Profile & Stats Drawer Panel -->
     <div class="profile-backdrop hidden" id="profileBackdrop"></div>
     <aside class="profile-panel hidden" id="profilePanel">
       <div class="profile-header">
-        <h3>Tu Perfil</h3>
-        <button class="profile-close-btn" id="profileCloseBtn">
+        <div class="profile-title-row">
+          <h3>Mi Perfil de Aprendizaje</h3>
+          <span class="cefr-pill" id="statCefrLevel">Nivel B1</span>
+        </div>
+        <button class="profile-close-btn" id="profileCloseBtn" aria-label="Cerrar panel">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </button>
       </div>
 
-      <div class="profile-stats" id="profileStats">
-        <div class="profile-stat">
+      <div class="profile-stats-grid">
+        <div class="profile-stat-card">
           <span class="stat-value" id="statMastered">0</span>
           <span class="stat-label">Dominadas</span>
         </div>
-        <div class="profile-stat">
+        <div class="profile-stat-card">
           <span class="stat-value" id="statLearning">0</span>
           <span class="stat-label">En progreso</span>
         </div>
-        <div class="profile-stat">
-          <span class="stat-value" id="statTimer">0m</span>
-          <span class="stat-label">Tiempo total</span>
-        </div>
-        <div class="profile-stat">
+        <div class="profile-stat-card highlight">
           <span class="stat-value" id="statLoops">0</span>
-          <span class="stat-label">En loop</span>
+          <span class="stat-label">En Loop de Errores</span>
+        </div>
+        <div class="profile-stat-card">
+          <span class="stat-value" id="statTimer">0m</span>
+          <span class="stat-label">Tiempo Total</span>
         </div>
       </div>
 
+      <div class="profile-action-box" id="loopActionBox">
+        <h4>Refuerzo de Errores</h4>
+        <p>Tienes <strong id="profileLoopCount">0</strong> palabras que necesitan repaso urgente (falladas 2+ veces).</p>
+        <button class="loop-train-btn" id="trainLoopBtn">Entrenar Palabras en Loop</button>
+      </div>
+
       <div class="profile-history-section">
-        <h4>Historial Reciente</h4>
+        <h4>Historial de Actividad</h4>
         <ul class="profile-history" id="profileHistory">
-          <li class="history-empty">Sin actividad aun</li>
+          <li class="history-empty">Sin actividad registrada aún. ¡Comienza a practicar!</li>
         </ul>
+      </div>
+
+      <div class="profile-reset-section">
+        <button class="reset-data-btn" id="resetProgressBtn">Restablecer Progreso</button>
       </div>
     </aside>
   </div>
