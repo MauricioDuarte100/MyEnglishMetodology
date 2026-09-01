@@ -342,10 +342,10 @@ import '../styles/global.css';
 
         <!-- How it works guide -->
         <div class="rsvp-guide-card">
-          <div class="rsvp-guide-icon">💡</div>
+          <div class="rsvp-guide-icon">🔗</div>
           <div class="rsvp-guide-content">
-            <strong>¿Cómo funciona el método RSVP?</strong>
-            <p>Fija tu mirada en la letra roja central (ORP). Tu cerebro absorberá cada palabra en milisegundos sin mover los ojos. Si quieres pausar, releer o analizar la gramática, usa los botones de <strong>retroceso</strong> o haz clic en cualquier palabra de la oración.</p>
+            <strong>¿Cómo funciona el Enlace Continuo (Connected Speech & RSVP)?</strong>
+            <p>En inglés nativo, las palabras <strong>nunca se cortan en sílabas aisladas</strong>: se enlazan en bloques de pensamiento (<em>Thought Groups</em>) y ligaduras continuas (<em>Linking:</em> <code>turn‿off</code>, <code>worked‿here</code>). Lee en bloques vinculados de 2 o 3 palabras para captar la idea fluida y eliminar la traducción mental.</p>
           </div>
         </div>
 
@@ -362,7 +362,7 @@ import '../styles/global.css';
           <!-- Top bar with Sentence and Word Counter -->
           <div class="rsvp-top-status-bar">
             <span class="rsvp-status-badge" id="rsvpSentenceCounter">Oración 1 / 1</span>
-            <span class="rsvp-status-badge highlight" id="rsvpWordProgress">Palabra 1 de 1</span>
+            <span class="rsvp-status-badge highlight" id="rsvpWordProgress">Bloque 1 de 1</span>
             <span class="rsvp-status-badge" id="rsvpPlaybackStatus">Pausado</span>
           </div>
 
@@ -386,9 +386,9 @@ import '../styles/global.css';
           <!-- Interactive Full Sentence Word Scrubber / Timeline -->
           <div class="rsvp-tokens-section">
             <div class="rsvp-tokens-header">
-              <span>Oración completa (haz clic en cualquier palabra para saltar / retroceder):</span>
-              <button class="rsvp-mini-action-btn" id="rsvpAudioBtn" title="Escuchar pronunciación nativa">
-                🔊 Escuchar
+              <span>Oración enlazada (haz clic en cualquier bloque o palabra para saltar / retroceder):</span>
+              <button class="rsvp-mini-action-btn" id="rsvpAudioBtn" title="Escuchar pronunciación nativa enlazada">
+                🔊 Escuchar Flujo Completo
               </button>
             </div>
             <div class="rsvp-tokens-container" id="rsvpSentenceTokens">
@@ -404,14 +404,14 @@ import '../styles/global.css';
             <button class="action-btn rsvp-nav-btn secondary" id="rsvpPrevSentenceBtn" title="Oración anterior (Shift + ←)">
               ⏮ Oración Anterior
             </button>
-            <button class="action-btn rsvp-step-btn" id="rsvpPrevWordBtn" title="Retroceder 1 palabra (←)">
-              ⏪ -1 Palabra
+            <button class="action-btn rsvp-step-btn" id="rsvpPrevWordBtn" title="Retroceder bloque (←)">
+              ⏪ -1 Bloque
             </button>
             <button class="action-btn primary rsvp-play-btn" id="rsvpToggleBtn" title="Comenzar / Pausar (Espacio)">
               ▶ Comenzar RSVP
             </button>
-            <button class="action-btn rsvp-step-btn" id="rsvpNextWordBtn" title="Avanzar 1 palabra (→)">
-              +1 Palabra ⏩
+            <button class="action-btn rsvp-step-btn" id="rsvpNextWordBtn" title="Avanzar bloque (→)">
+              +1 Bloque ⏩
             </button>
             <button class="action-btn rsvp-nav-btn secondary" id="rsvpNextSentenceBtn" title="Siguiente oración (Shift + →)">
               Siguiente Oración ⏭
@@ -421,14 +421,23 @@ import '../styles/global.css';
             </button>
           </div>
 
-          <!-- Settings Row: Source, Speed Slider, Speed Presets, Auto-advance -->
+          <!-- Settings Row: Source, Chunking/Linking Mode, Speed Slider, Speed Presets, Auto-advance -->
           <div class="rsvp-settings-row">
             <div class="rsvp-setting-item">
               <label for="rsvpSourceSelect"><strong>Fuente:</strong></label>
-              <select id="rsvpSourceSelect" class="timer-select" style="min-width: 170px;">
+              <select id="rsvpSourceSelect" class="timer-select" style="min-width: 160px;">
                 <option value="vocab" selected>Vocabulario del Set</option>
                 <option value="grammar">Pasado vs Perfecto</option>
                 <option value="custom">Texto Personalizado</option>
+              </select>
+            </div>
+
+            <div class="rsvp-setting-item">
+              <label for="rsvpChunkSelect"><strong>🔗 Modo Enlace:</strong></label>
+              <select id="rsvpChunkSelect" class="timer-select" style="min-width: 190px;">
+                <option value="2" selected>🔗 2 Palabras (Thought Groups)</option>
+                <option value="3">🌊 3 Palabras (Flujo Continuo)</option>
+                <option value="1">🎯 1 Palabra (Foco Central)</option>
               </select>
             </div>
 

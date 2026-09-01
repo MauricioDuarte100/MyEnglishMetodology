@@ -2646,7 +2646,52 @@ body {
   transform: scale(1.06);
 }
 
-/* Controls Panel */
+.rsvp-token.active-chunk {
+  background: rgba(168, 85, 247, 0.25);
+  border-color: #c084fc;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.45);
+  transform: scale(1.05);
+}
+
+.rsvp-token-link {
+  color: #c084fc;
+  font-size: 1.05rem;
+  font-weight: 900;
+  user-select: none;
+  cursor: help;
+  padding: 0 1px;
+  line-height: 1;
+  transition: all var(--transition-fast);
+}
+
+.rsvp-token-link:hover {
+  color: #38bdf8;
+  transform: scale(1.3);
+}
+
+.rsvp-word-display.chunked {
+  font-size: 2.15rem;
+  gap: 8px;
+}
+
+.rsvp-chunk-item {
+  color: #e2e8f0;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.rsvp-chunk-item .rsvp-orp {
+  color: #f43f5e;
+}
+
+.rsvp-chunk-link {
+  color: #c084fc;
+  font-size: 1.4rem;
+  margin: 0 4px;
+  font-weight: 900;
+}
 .rsvp-controls-panel {
   width: 100%;
   max-width: 720px;

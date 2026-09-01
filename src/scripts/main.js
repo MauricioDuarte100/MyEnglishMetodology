@@ -28,6 +28,9 @@ const state = {
 
 const rsvpState = {
     source: 'vocab', // 'vocab' | 'grammar' | 'custom'
+    chunkMode: 2, // 1: single word, 2: 2-word thought groups (linking), 3: 3-word flow
+    chunks: [],
+    chunkIndex: 0,
     words: [],
     wordIndex: 0,
     wpm: 220,
@@ -693,7 +696,7 @@ function toggleAutoPlay() {
     }
 }
 
-// ===== RSVP Speed Reader Engine (with live phonetics & backward navigation) =====
+// ===== RSVP Speed Reader Engine (with Connected Speech & Thought Groups) =====
 function calculateORPIndex(word) {
     const len = word.length;
     if (len <= 1) return 0;
@@ -701,6 +704,50 @@ function calculateORPIndex(word) {
     if (len <= 9) return 2;
     if (len <= 13) return 3;
     return 4;
+}
+
+function isConsonantVowelLink(w1, w2) {
+    if (!w1 || !w2) return false;
+    const clean1 = w1.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const clean2 = w2.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!clean1 || !clean2) return false;
+
+    // Do not link across strong punctuation (. ? ! ; :)
+    if (/[.?!;:]/.test(w1)) return false;
+
+    const vowels = ['a', 'e', 'i', 'o', 'u'];
+    const lastChar1 = clean1.slice(-1);
+    const firstChar2 = clean2.charAt(0);
+
+    const isLastConsonant = !vowels.includes(lastChar1);
+    const isFirstVowel = vowels.includes(firstChar2);
+
+    // 1. Classic Consonant + Vowel linking (e.g. "turn off" -> tur-noff, "worked in", "pick up", "had already")
+    if (isLastConsonant && isFirstVowel) return true;
+
+    // 2. Linking R (e.g. "for a", "here is", "there are")
+    if (clean1.endsWith('r') || clean1.endsWith('re')) return true;
+
+    // 3. Palatalization linking (e.g. "did you", "would you", "want you")
+    if ((clean1.endsWith('d') || clean1.endsWith('t')) && (clean2.startsWith('y') || clean2 === 'you')) return true;
+
+    return false;
+}
+
+function buildRSVPChunks(words, chunkSize) {
+    const chunks = [];
+    const size = Math.max(1, Math.min(3, chunkSize || 1));
+
+    for (let i = 0; i < words.length; i += size) {
+        const chunkWords = words.slice(i, i + size);
+        const tokenIndices = chunkWords.map((_, idx) => i + idx);
+        chunks.push({
+            text: chunkWords.join(' '),
+            words: chunkWords,
+            tokenIndices
+        });
+    }
+    return chunks;
 }
 
 function formatTenseLabel(tenseType) {
@@ -777,9 +824,9 @@ function initRSVP(keepIndex = false) {
     } else if (rsvpState.source === 'custom') {
         const customInput = document.getElementById('rsvpCustomTextInput');
         const txt = (customInput?.value || '').trim();
-        rsvpState.currentSentence = txt || 'Please paste your English text to speed read word by word.';
-        rsvpState.currentPhonetic = '/fonética personalizada/';
-        rsvpState.currentMeaning = 'Texto personalizado del usuario';
+        rsvpState.currentSentence = txt || 'Please paste your English text to speed read in connected thought groups.';
+        rsvpState.currentPhonetic = '[flujo de voz conectado]';
+        rsvpState.currentMeaning = 'Texto personalizado enlazado';
 
         if (grammarBox) grammarBox.classList.add('hidden');
         if (sentenceCounter) {
@@ -793,7 +840,7 @@ function initRSVP(keepIndex = false) {
         const word = state.currentWords[state.currentIndex];
         if (word) {
             rsvpState.currentSentence = word.example || `${word.word} is a key concept in English.`;
-            rsvpState.currentPhonetic = word.phonetic ? `/${word.phonetic}/` : `/${word.word}/`;
+            rsvpState.currentPhonetic = word.phonetic ? `[${word.phonetic}]` : `[${word.word}]`;
             rsvpState.currentMeaning = word.translation_es || word.translation;
         }
 
@@ -810,21 +857,66 @@ function initRSVP(keepIndex = false) {
     }
 
     rsvpState.words = rsvpState.currentSentence.trim().split(/\s+/).filter(w => w.length > 0);
-    if (!keepIndex || rsvpState.wordIndex >= rsvpState.words.length || rsvpState.wordIndex < 0) {
-        rsvpState.wordIndex = 0;
+    rsvpState.chunks = buildRSVPChunks(rsvpState.words, rsvpState.chunkMode);
+
+    if (!keepIndex || rsvpState.chunkIndex >= rsvpState.chunks.length || rsvpState.chunkIndex < 0) {
+        rsvpState.chunkIndex = 0;
     }
 
-    renderRSVPWord(rsvpState.words[rsvpState.wordIndex] || 'reading');
+    renderRSVPChunk(rsvpState.chunks[rsvpState.chunkIndex]);
     renderRSVPTokens();
     updateRSVPWordProgress();
 
     const pText = document.getElementById('rsvpPhoneticText');
     const mText = document.getElementById('rsvpMeaningText');
-    if (pText) pText.textContent = `Pronunciación: ${rsvpState.currentPhonetic}`;
+    if (pText) pText.textContent = `Pronunciación (Flujo Conectado): ${rsvpState.currentPhonetic}`;
     if (mText) mText.textContent = `Significado: ${rsvpState.currentMeaning}`;
 
     const pbStatus = document.getElementById('rsvpPlaybackStatus');
     if (pbStatus && !rsvpState.isPlaying) pbStatus.textContent = 'Pausado';
+}
+
+function renderRSVPChunk(chunk) {
+    const wordDisplay = document.querySelector('.rsvp-word-display');
+    if (!wordDisplay) return;
+
+    if (!chunk || !chunk.words || chunk.words.length === 0) {
+        wordDisplay.innerHTML = `<span class="rsvp-left" id="rsvpLeft">rea</span><span class="rsvp-orp" id="rsvpOrp">d</span><span class="rsvp-right" id="rsvpRight">ing</span>`;
+        return;
+    }
+
+    if (chunk.words.length === 1) {
+        wordDisplay.classList.remove('chunked');
+        const clean = chunk.words[0].trim();
+        const orpIdx = calculateORPIndex(clean);
+        const leftPart = clean.slice(0, orpIdx);
+        const orpChar = clean[orpIdx] || '';
+        const rightPart = clean.slice(orpIdx + 1);
+
+        wordDisplay.innerHTML = `
+            <span class="rsvp-left" id="rsvpLeft">${leftPart}</span>
+            <span class="rsvp-orp" id="rsvpOrp">${orpChar}</span>
+            <span class="rsvp-right" id="rsvpRight">${rightPart}</span>
+        `;
+    } else {
+        wordDisplay.classList.add('chunked');
+        let html = '';
+        chunk.words.forEach((w, idx) => {
+            const clean = w.trim();
+            const orpIdx = calculateORPIndex(clean);
+            const left = clean.slice(0, orpIdx);
+            const orp = clean[orpIdx] || '';
+            const right = clean.slice(orpIdx + 1);
+
+            html += `<span class="rsvp-chunk-item"><span class="rsvp-left" style="width:auto;text-align:inherit;">${left}</span><span class="rsvp-orp">${orp}</span><span class="rsvp-right" style="width:auto;text-align:inherit;">${right}</span></span>`;
+
+            if (idx < chunk.words.length - 1) {
+                const links = isConsonantVowelLink(chunk.words[idx], chunk.words[idx + 1]);
+                html += `<span class="rsvp-chunk-link" title="${links ? 'Enlace fonético natural' : 'Grupo de pensamiento continuo'}">‿</span>`;
+            }
+        });
+        wordDisplay.innerHTML = html;
+    }
 }
 
 function renderRSVPTokens() {
@@ -832,17 +924,31 @@ function renderRSVPTokens() {
     if (!container) return;
 
     container.innerHTML = '';
+    const currentChunk = rsvpState.chunks[rsvpState.chunkIndex];
+    const activeIndices = currentChunk ? currentChunk.tokenIndices : [0];
+
     rsvpState.words.forEach((w, idx) => {
+        const isCurrentActive = activeIndices.includes(idx);
         const token = document.createElement('button');
         token.type = 'button';
-        token.className = `rsvp-token ${idx === rsvpState.wordIndex ? 'active' : ''}`;
+        token.className = `rsvp-token ${isCurrentActive ? 'active-chunk' : ''}`;
         token.dataset.index = idx.toString();
         token.textContent = w;
-        token.title = `Saltar a la palabra "${w}" (#${idx + 1})`;
+        token.title = `Saltar al bloque que contiene "${w}"`;
         token.addEventListener('click', () => {
-            jumpToRSVPWord(idx);
+            jumpToRSVPTokenIndex(idx);
         });
         container.appendChild(token);
+
+        // Add visual linking badge if consonant-to-vowel connects to next word
+        if (idx < rsvpState.words.length - 1) {
+            const links = isConsonantVowelLink(w, rsvpState.words[idx + 1]);
+            const linkSpan = document.createElement('span');
+            linkSpan.className = 'rsvp-token-link';
+            linkSpan.textContent = '‿';
+            linkSpan.title = links ? `Enlace fonético: "${w}" se une con "${rsvpState.words[idx + 1]}" sin pausa` : 'Flujo continuo';
+            container.appendChild(linkSpan);
+        }
     });
 }
 
@@ -850,11 +956,15 @@ function updateRSVPTokenHighlight() {
     const container = document.getElementById('rsvpSentenceTokens');
     if (!container) return;
 
+    const currentChunk = rsvpState.chunks[rsvpState.chunkIndex];
+    const activeIndices = currentChunk ? currentChunk.tokenIndices : [];
+
     const tokens = container.querySelectorAll('.rsvp-token');
     tokens.forEach((t, idx) => {
-        const isActive = idx === rsvpState.wordIndex;
-        t.classList.toggle('active', isActive);
-        if (isActive) {
+        const isChunkActive = activeIndices.includes(idx);
+        t.classList.toggle('active-chunk', isChunkActive);
+        t.classList.toggle('active', isChunkActive && idx === activeIndices[0]);
+        if (isChunkActive && idx === activeIndices[0]) {
             t.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
         }
     });
@@ -864,57 +974,41 @@ function updateRSVPTokenHighlight() {
 function updateRSVPWordProgress() {
     const wordProgress = document.getElementById('rsvpWordProgress');
     if (wordProgress) {
-        const total = rsvpState.words.length || 1;
-        const current = Math.min(rsvpState.wordIndex + 1, total);
-        wordProgress.textContent = `Palabra ${current} de ${total}`;
+        const totalChunks = rsvpState.chunks.length || 1;
+        const currentChunkNum = Math.min(rsvpState.chunkIndex + 1, totalChunks);
+        const modeLabel = rsvpState.chunkMode === 1 ? '1 palabra' : `${rsvpState.chunkMode} palabras`;
+        wordProgress.textContent = `Bloque ${currentChunkNum} de ${totalChunks} (${modeLabel})`;
     }
-}
-
-function renderRSVPWord(rawWord) {
-    if (!rawWord) return;
-    const clean = rawWord.trim();
-    const orpIdx = calculateORPIndex(clean);
-
-    const leftPart = clean.slice(0, orpIdx);
-    const orpChar = clean[orpIdx] || '';
-    const rightPart = clean.slice(orpIdx + 1);
-
-    const elLeft = document.getElementById('rsvpLeft');
-    const elOrp = document.getElementById('rsvpOrp');
-    const elRight = document.getElementById('rsvpRight');
-
-    if (elLeft) elLeft.textContent = leftPart;
-    if (elOrp) elOrp.textContent = orpChar;
-    if (elRight) elRight.textContent = rightPart;
 }
 
 function stepRSVPWord(direction) {
-    if (rsvpState.words.length === 0) return;
+    if (rsvpState.chunks.length === 0) return;
     if (rsvpState.isPlaying) stopRSVP();
 
-    const newIndex = rsvpState.wordIndex + direction;
-    if (newIndex >= 0 && newIndex < rsvpState.words.length) {
-        rsvpState.wordIndex = newIndex;
+    const newIndex = rsvpState.chunkIndex + direction;
+    if (newIndex >= 0 && newIndex < rsvpState.chunks.length) {
+        rsvpState.chunkIndex = newIndex;
     } else if (newIndex < 0) {
-        rsvpState.wordIndex = 0;
-    } else if (newIndex >= rsvpState.words.length) {
-        rsvpState.wordIndex = rsvpState.words.length - 1;
+        rsvpState.chunkIndex = 0;
+    } else if (newIndex >= rsvpState.chunks.length) {
+        rsvpState.chunkIndex = rsvpState.chunks.length - 1;
     }
 
-    renderRSVPWord(rsvpState.words[rsvpState.wordIndex]);
+    renderRSVPChunk(rsvpState.chunks[rsvpState.chunkIndex]);
     updateRSVPTokenHighlight();
 
     const pbStatus = document.getElementById('rsvpPlaybackStatus');
     if (pbStatus) pbStatus.textContent = 'Paso a paso';
 }
 
-function jumpToRSVPWord(idx) {
-    if (rsvpState.words.length === 0) return;
+function jumpToRSVPTokenIndex(tokenIdx) {
+    if (rsvpState.chunks.length === 0) return;
     if (rsvpState.isPlaying) stopRSVP();
 
-    if (idx >= 0 && idx < rsvpState.words.length) {
-        rsvpState.wordIndex = idx;
-        renderRSVPWord(rsvpState.words[rsvpState.wordIndex]);
+    const targetChunkIdx = rsvpState.chunks.findIndex(c => c.tokenIndices.includes(tokenIdx));
+    if (targetChunkIdx !== -1) {
+        rsvpState.chunkIndex = targetChunkIdx;
+        renderRSVPChunk(rsvpState.chunks[rsvpState.chunkIndex]);
         updateRSVPTokenHighlight();
         const pbStatus = document.getElementById('rsvpPlaybackStatus');
         if (pbStatus) pbStatus.textContent = 'Pausado';
@@ -959,8 +1053,8 @@ function nextRSVPSentence(autoResume = false) {
 
 function restartRSVPSentence() {
     stopRSVP();
-    rsvpState.wordIndex = 0;
-    renderRSVPWord(rsvpState.words[0] || 'reading');
+    rsvpState.chunkIndex = 0;
+    renderRSVPChunk(rsvpState.chunks[0]);
     updateRSVPTokenHighlight();
     const pbStatus = document.getElementById('rsvpPlaybackStatus');
     if (pbStatus) pbStatus.textContent = 'Reiniciado al inicio';
@@ -968,7 +1062,7 @@ function restartRSVPSentence() {
 
 function speakRSVPSentence() {
     if (rsvpState.currentSentence) {
-        speakText(rsvpState.currentSentence);
+        speakText(rsvpState.currentSentence, { rate: 1.0 });
     }
 }
 
@@ -986,9 +1080,9 @@ function startRSVP() {
         rsvpState.intervalId = null;
     }
 
-    if (rsvpState.words.length === 0) initRSVP(false);
-    if (rsvpState.wordIndex >= rsvpState.words.length) {
-        rsvpState.wordIndex = 0;
+    if (rsvpState.chunks.length === 0) initRSVP(false);
+    if (rsvpState.chunkIndex >= rsvpState.chunks.length) {
+        rsvpState.chunkIndex = 0;
     }
     rsvpState.isPlaying = true;
 
@@ -996,14 +1090,15 @@ function startRSVP() {
     if (toggleBtn) toggleBtn.textContent = '⏸ Pausar RSVP';
 
     const pbStatus = document.getElementById('rsvpPlaybackStatus');
-    if (pbStatus) pbStatus.textContent = `▶ Leyendo (${rsvpState.wpm} WPM)`;
+    if (pbStatus) pbStatus.textContent = `▶ Leyendo (${rsvpState.wpm} WPM - ${rsvpState.chunkMode}p/bloque)`;
 
-    const delayMs = Math.max(80, Math.round(60000 / rsvpState.wpm));
+    // Calculate delay per chunk based on WPM and words in chunk
+    const baseWordDelayMs = Math.max(70, Math.round(60000 / rsvpState.wpm));
 
     const step = () => {
         if (!rsvpState.isPlaying) return;
 
-        if (rsvpState.wordIndex >= rsvpState.words.length) {
+        if (rsvpState.chunkIndex >= rsvpState.chunks.length) {
             if (rsvpState.autoAdvance) {
                 const statusEl = document.getElementById('rsvpPlaybackStatus');
                 if (statusEl) statusEl.textContent = '⏳ Siguiente oración...';
@@ -1020,20 +1115,22 @@ function startRSVP() {
             return;
         }
 
-        const currentToken = rsvpState.words[rsvpState.wordIndex];
-        renderRSVPWord(currentToken);
+        const currentChunk = rsvpState.chunks[rsvpState.chunkIndex];
+        renderRSVPChunk(currentChunk);
         updateRSVPTokenHighlight();
-        rsvpState.wordIndex++;
+        rsvpState.chunkIndex++;
 
-        // Add slight extra delay for punctuation
-        let actualDelay = delayMs;
-        if (currentToken.endsWith('.') || currentToken.endsWith('!') || currentToken.endsWith('?')) {
-            actualDelay = delayMs * 1.8;
-        } else if (currentToken.endsWith(',') || currentToken.endsWith(';') || currentToken.endsWith(':')) {
-            actualDelay = delayMs * 1.4;
+        let chunkDelay = baseWordDelayMs * (currentChunk.words.length || 1);
+        const lastWord = currentChunk.words[currentChunk.words.length - 1] || '';
+
+        // Add slight extra delay for punctuation at chunk end
+        if (lastWord.endsWith('.') || lastWord.endsWith('!') || lastWord.endsWith('?')) {
+            chunkDelay = chunkDelay * 1.7;
+        } else if (lastWord.endsWith(',') || lastWord.endsWith(';') || lastWord.endsWith(':')) {
+            chunkDelay = chunkDelay * 1.35;
         }
 
-        rsvpState.intervalId = setTimeout(step, actualDelay);
+        rsvpState.intervalId = setTimeout(step, chunkDelay);
     };
 
     step();
@@ -2271,17 +2368,23 @@ function setupEventListeners() {
         initRSVP();
     });
 
+    const rsvpChunkSelect = document.getElementById('rsvpChunkSelect');
+    rsvpChunkSelect?.addEventListener('change', (e) => {
+        rsvpState.chunkMode = parseInt(e.target.value) || 2;
+        initRSVP(false);
+        if (rsvpState.isPlaying) {
+            stopRSVP();
+            startRSVP();
+        }
+    });
+
     const rsvpCustomInput = document.getElementById('rsvpCustomTextInput');
     rsvpCustomInput?.addEventListener('input', (e) => {
         const customText = (e.target.value || '').trim();
         if (customText.length > 0) {
             stopRSVP();
             rsvpState.currentSentence = customText;
-            rsvpState.words = customText.split(/\s+/).filter(w => w.length > 0);
-            rsvpState.wordIndex = 0;
-            renderRSVPWord(rsvpState.words[0] || 'reading');
-            renderRSVPTokens();
-            updateRSVPWordProgress();
+            initRSVP(false);
         }
     });
 
@@ -2318,9 +2421,12 @@ function setupEventListeners() {
     });
 
     const autoAdvanceCheck = document.getElementById('rsvpAutoAdvanceCheck');
-    autoAdvanceCheck?.addEventListener('change', (e) => {
-        rsvpState.autoAdvance = e.target.checked;
-    });
+    if (autoAdvanceCheck) {
+        autoAdvanceCheck.checked = rsvpState.autoAdvance;
+        autoAdvanceCheck.addEventListener('change', (e) => {
+            rsvpState.autoAdvance = e.target.checked;
+        });
+    }
 
     // Grammar Anti-Translation Engine Listeners
     // Grammar Anti-Translation Engine Listeners
