@@ -268,36 +268,134 @@ function updateLoopBadge() {
     if (profileLoopCount) profileLoopCount.textContent = count;
 }
 
-// ===== Web Speech Audio Engine =====
+// ===== Ultra-Realistic Neural Speech Audio Engine =====
+let currentAudioInstance = null;
+const ttsAudioCache = new Map();
+
 function stopAudio() {
+    if (currentAudioInstance) {
+        currentAudioInstance.pause();
+        currentAudioInstance.currentTime = 0;
+        currentAudioInstance = null;
+    }
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
     }
 }
 
-function speakText(text, rate = 0.8, onEndCallback = null) {
-    if (!text || !('speechSynthesis' in window)) return;
+function speakText(text, rateOrOptions = 1.0, onEndCallback = null) {
+    if (!text) return;
+
+    let rate = 1.0;
+    let voice = 'en-US-JennyNeural'; // Natural, authentic American English female voice
+    let callback = onEndCallback;
+
+    if (typeof rateOrOptions === 'number') {
+        rate = rateOrOptions;
+    } else if (typeof rateOrOptions === 'object' && rateOrOptions !== null) {
+        if (rateOrOptions.rate) rate = rateOrOptions.rate;
+        if (rateOrOptions.voice) voice = rateOrOptions.voice;
+        if (rateOrOptions.onEnd) callback = rateOrOptions.onEnd;
+    } else if (typeof rateOrOptions === 'function') {
+        callback = rateOrOptions;
+    }
+
+    const cleanText = text.replace(/[*_#`[\]"]/g, '').trim();
+    if (!cleanText) return;
+
+    stopAudio();
+
+    // Format rate string (e.g. 0.85 -> "-15%", 1.0 -> "+0%")
+    let rateStr = '+0%';
+    if (rate !== 1.0) {
+        const pct = Math.round((rate - 1.0) * 100);
+        rateStr = (pct >= 0 ? '+' : '') + `${pct}%`;
+    }
+
+    const cacheKey = `${voice}_${rateStr}_${cleanText}`;
+
+    // 1. Instant Playback from In-Memory Cache
+    if (ttsAudioCache.has(cacheKey)) {
+        playAudioUrl(ttsAudioCache.get(cacheKey), callback, cleanText, rate);
+        return;
+    }
+
+    // 2. Fetch High-Definition Neural Speech from /api/tts
+    fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: cleanText, voice, rate: rateStr })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error(`Neural TTS HTTP ${res.status}`);
+        return res.blob();
+    })
+    .then(blob => {
+        const audioUrl = URL.createObjectURL(blob);
+        ttsAudioCache.set(cacheKey, audioUrl);
+        playAudioUrl(audioUrl, callback, cleanText, rate);
+    })
+    .catch(err => {
+        console.warn('Neural TTS fallback:', err);
+        fallbackToBrowserTTS(cleanText, rate, callback);
+    });
+}
+
+function playAudioUrl(url, callback, fallbackText, fallbackRate) {
+    try {
+        const audio = new Audio(url);
+        currentAudioInstance = audio;
+
+        audio.onended = () => {
+            currentAudioInstance = null;
+            if (callback) callback();
+        };
+
+        audio.onerror = () => {
+            currentAudioInstance = null;
+            fallbackToBrowserTTS(fallbackText, fallbackRate, callback);
+        };
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(e => {
+                console.warn('Audio playback error, fallback:', e);
+                fallbackToBrowserTTS(fallbackText, fallbackRate, callback);
+            });
+        }
+    } catch (e) {
+        fallbackToBrowserTTS(fallbackText, fallbackRate, callback);
+    }
+}
+
+function fallbackToBrowserTTS(text, rate, onEndCallback) {
+    if (!('speechSynthesis' in window)) {
+        if (onEndCallback) onEndCallback();
+        return;
+    }
 
     window.speechSynthesis.cancel();
-    const cleanText = text.replace(/["_]/g, '').trim();
-
     let voices = window.speechSynthesis.getVoices();
     if (voices.length === 0) {
         window.speechSynthesis.onvoiceschanged = () => {
             voices = window.speechSynthesis.getVoices();
-            executeSpeak(cleanText, voices, rate, onEndCallback);
+            executeBrowserSpeak(text, voices, rate, onEndCallback);
         };
         return;
     }
-    executeSpeak(cleanText, voices, rate, onEndCallback);
+    executeBrowserSpeak(text, voices, rate, onEndCallback);
 }
 
-function executeSpeak(text, voices, rate, onEndCallback) {
+function executeBrowserSpeak(text, voices, rate, onEndCallback) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
     utterance.rate = rate;
 
-    let voice = voices.find(v => (v.lang === 'en-US' || v.lang.startsWith('en_US')) && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Ava')));
+    // Prioritize natural neural browser voices
+    let voice = voices.find(v => (v.lang === 'en-US' || v.lang.startsWith('en_US')) &&
+        (v.name.includes('Natural') || v.name.includes('Online') || v.name.includes('Neural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Ava') || v.name.includes('Jenny') || v.name.includes('Guy')));
+
+    if (!voice) voice = voices.find(v => v.lang.toLowerCase().includes('en-us') && !v.name.includes('Desktop'));
     if (!voice) voice = voices.find(v => v.lang.toLowerCase().includes('en-us'));
     if (!voice) voice = voices.find(v => v.lang.toLowerCase().startsWith('en'));
 
@@ -1613,7 +1711,11 @@ function displayReadingText(result) {
 
     textContent.querySelectorAll('.segment-audio-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            speakText(btn.dataset.text);
+            const segIdx = parseInt(btn.closest('.reading-segment')?.dataset?.segmentIndex || '0');
+            const seg = result.segments?.[segIdx];
+            const isMale = (seg?.speaker && /alex|john|david|michael|tom|mark|daniel|james|robert|interviewer|boss|engineer/i.test(seg.speaker)) || (segIdx % 2 === 1);
+            const voice = isMale ? 'en-US-GuyNeural' : 'en-US-JennyNeural';
+            speakText(btn.dataset.text, { voice, rate: 1.0 });
         });
     });
 }
@@ -1632,13 +1734,15 @@ function playFullDialogue() {
 
         const seg = segments[currentIdx];
         const text = seg.english || seg.text;
+        const isMale = (seg.speaker && /alex|john|david|michael|tom|mark|daniel|james|robert|interviewer|boss|engineer/i.test(seg.speaker)) || (currentIdx % 2 === 1);
+        const segmentVoice = isMale ? 'en-US-GuyNeural' : 'en-US-JennyNeural';
 
         document.querySelectorAll('.reading-segment').forEach((s, idx) => {
             s.classList.toggle('playing', idx === currentIdx);
         });
 
         currentIdx++;
-        speakText(text, 0.85, () => {
+        speakText(text, { voice: segmentVoice, rate: 1.0 }, () => {
             setTimeout(playNext, 450);
         });
     }

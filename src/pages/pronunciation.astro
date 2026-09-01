@@ -343,14 +343,63 @@ import '../styles/global.css';
   </div>
 
   <script>
-    // TTS for pronunciation practice
+    // High-Definition Neural TTS for pronunciation practice with caching
+    const audioCache = new Map();
+    let activeAudio = null;
+
+    function playPronunciation(word: string) {
+      if (!word) return;
+      const clean = word.replace(/[*_#`[\]"]/g, '').trim();
+      if (!clean) return;
+
+      if (activeAudio) {
+        activeAudio.pause();
+        activeAudio.currentTime = 0;
+        activeAudio = null;
+      }
+
+      if (audioCache.has(clean)) {
+        activeAudio = new Audio(audioCache.get(clean));
+        activeAudio.play().catch(() => fallbackSpeak(clean));
+        return;
+      }
+
+      fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: clean, voice: 'en-US-JennyNeural', rate: '+0%' })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('TTS error');
+        return res.blob();
+      })
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        audioCache.set(clean, url);
+        activeAudio = new Audio(url);
+        activeAudio.play().catch(() => fallbackSpeak(clean));
+      })
+      .catch(() => {
+        fallbackSpeak(clean);
+      });
+    }
+
+    function fallbackSpeak(text: string) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.9;
+      const voices = window.speechSynthesis.getVoices();
+      const best = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Jenny')));
+      if (best) utterance.voice = best;
+      window.speechSynthesis.speak(utterance);
+    }
+
     document.querySelectorAll('.phoneme-play, .pair-word').forEach(btn => {
       btn.addEventListener('click', () => {
         const word = (btn as HTMLElement).dataset.word || (btn.textContent || '').split(' ')[0];
-        const utterance = new SpeechSynthesisUtterance(word);
-        utterance.lang = 'en-US';
-        utterance.rate = 0.8;
-        speechSynthesis.speak(utterance);
+        playPronunciation(word);
       });
     });
 
