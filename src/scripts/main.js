@@ -36,7 +36,7 @@ const rsvpState = {
     currentSentence: '',
     currentPhonetic: '',
     currentMeaning: '',
-    autoAdvance: false
+    autoAdvance: true
 };
 
 const grammarState = {
@@ -646,7 +646,10 @@ function applyGrammarFilters() {
 }
 
 function initRSVP(keepIndex = false) {
-    stopRSVP();
+    if (!rsvpState.isPlaying && rsvpState.intervalId) {
+        clearTimeout(rsvpState.intervalId);
+        rsvpState.intervalId = null;
+    }
 
     const grammarBox = document.getElementById('rsvpGrammarBox');
     const tenseBadge = document.getElementById('rsvpTenseBadge');
@@ -656,6 +659,7 @@ function initRSVP(keepIndex = false) {
     if (rsvpState.source === 'grammar') {
         if (!grammarState.filteredItems || grammarState.filteredItems.length === 0) applyGrammarFilters();
         const totalGrammar = grammarState.filteredItems.length || 1;
+        if (grammarState.currentIndex >= totalGrammar) grammarState.currentIndex = 0;
         const item = grammarState.filteredItems[grammarState.currentIndex] || PAST_PERFECT_LATIN_DATASET[0];
         if (item) {
             rsvpState.currentSentence = item.english;
@@ -685,8 +689,10 @@ function initRSVP(keepIndex = false) {
         }
     } else {
         // default vocab
-        const word = state.currentWords[state.currentIndex];
+        if (!state.currentWords || state.currentWords.length === 0) loadWords();
         const totalVocab = state.currentWords.length || 1;
+        if (state.currentIndex >= state.currentWords.length) state.currentIndex = 0;
+        const word = state.currentWords[state.currentIndex];
         if (word) {
             rsvpState.currentSentence = word.example || `${word.word} is a key concept in English.`;
             rsvpState.currentPhonetic = word.phonetic ? `/${word.phonetic}/` : `/${word.word}/`;
@@ -720,7 +726,7 @@ function initRSVP(keepIndex = false) {
     if (mText) mText.textContent = `Significado: ${rsvpState.currentMeaning}`;
 
     const pbStatus = document.getElementById('rsvpPlaybackStatus');
-    if (pbStatus) pbStatus.textContent = 'Pausado';
+    if (pbStatus && !rsvpState.isPlaying) pbStatus.textContent = 'Pausado';
 }
 
 function renderRSVPTokens() {
@@ -817,8 +823,8 @@ function jumpToRSVPWord(idx) {
     }
 }
 
-function prevRSVPSentence() {
-    const wasPlaying = rsvpState.isPlaying;
+function prevRSVPSentence(autoResume = false) {
+    const shouldResume = autoResume || rsvpState.isPlaying;
     stopRSVP();
 
     if (rsvpState.source === 'grammar') {
@@ -826,16 +832,17 @@ function prevRSVPSentence() {
         const total = grammarState.filteredItems.length || 1;
         grammarState.currentIndex = (grammarState.currentIndex - 1 + total) % total;
     } else if (rsvpState.source === 'vocab') {
+        if (!state.currentWords || state.currentWords.length === 0) loadWords();
         const total = state.currentWords.length || 1;
         state.currentIndex = (state.currentIndex - 1 + total) % total;
     }
 
-    initRSVP();
-    if (wasPlaying) startRSVP();
+    initRSVP(false);
+    if (shouldResume) startRSVP();
 }
 
-function nextRSVPSentence() {
-    const wasPlaying = rsvpState.isPlaying;
+function nextRSVPSentence(autoResume = false) {
+    const shouldResume = autoResume || rsvpState.isPlaying;
     stopRSVP();
 
     if (rsvpState.source === 'grammar') {
@@ -843,12 +850,13 @@ function nextRSVPSentence() {
         const total = grammarState.filteredItems.length || 1;
         grammarState.currentIndex = (grammarState.currentIndex + 1) % total;
     } else if (rsvpState.source === 'vocab') {
+        if (!state.currentWords || state.currentWords.length === 0) loadWords();
         const total = state.currentWords.length || 1;
         state.currentIndex = (state.currentIndex + 1) % total;
     }
 
-    initRSVP();
-    if (wasPlaying) startRSVP();
+    initRSVP(false);
+    if (shouldResume) startRSVP();
 }
 
 function restartRSVPSentence() {
@@ -875,7 +883,12 @@ function toggleRSVP() {
 }
 
 function startRSVP() {
-    if (rsvpState.words.length === 0) initRSVP();
+    if (rsvpState.intervalId) {
+        clearTimeout(rsvpState.intervalId);
+        rsvpState.intervalId = null;
+    }
+
+    if (rsvpState.words.length === 0) initRSVP(false);
     if (rsvpState.wordIndex >= rsvpState.words.length) {
         rsvpState.wordIndex = 0;
     }
@@ -887,23 +900,24 @@ function startRSVP() {
     const pbStatus = document.getElementById('rsvpPlaybackStatus');
     if (pbStatus) pbStatus.textContent = `▶ Leyendo (${rsvpState.wpm} WPM)`;
 
-    const delayMs = Math.round(60000 / rsvpState.wpm);
+    const delayMs = Math.max(80, Math.round(60000 / rsvpState.wpm));
 
     const step = () => {
         if (!rsvpState.isPlaying) return;
 
         if (rsvpState.wordIndex >= rsvpState.words.length) {
             if (rsvpState.autoAdvance) {
-                // Short pause then advance to next sentence
+                const statusEl = document.getElementById('rsvpPlaybackStatus');
+                if (statusEl) statusEl.textContent = '⏳ Siguiente oración...';
                 rsvpState.intervalId = setTimeout(() => {
-                    nextRSVPSentence();
-                    startRSVP();
-                }, 850);
+                    if (!rsvpState.isPlaying) return;
+                    nextRSVPSentence(true);
+                }, 750);
             } else {
                 stopRSVP();
                 const statusEl = document.getElementById('rsvpPlaybackStatus');
                 if (statusEl) statusEl.textContent = '✔ Oración completada';
-                if (toggleBtn) toggleBtn.textContent = '🔄 Repetir Oración';
+                if (toggleBtn) toggleBtn.textContent = '▶ Repetir Oración';
             }
             return;
         }
@@ -937,7 +951,7 @@ function stopRSVP() {
     if (toggleBtn) toggleBtn.textContent = '▶ Comenzar RSVP';
 
     const pbStatus = document.getElementById('rsvpPlaybackStatus');
-    if (pbStatus && pbStatus.textContent.startsWith('▶ Leyendo')) {
+    if (pbStatus && (pbStatus.textContent.startsWith('▶') || pbStatus.textContent.startsWith('⏳'))) {
         pbStatus.textContent = 'Pausado';
     }
 }
