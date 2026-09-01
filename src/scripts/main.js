@@ -13,7 +13,8 @@ const state = {
     currentCategory: 'core',
     currentMode: 'flashcard',
     currentSet: 1,
-    itemsPerSet: 50,
+    itemsPerSet: 200, // 200 words per set by default
+    autoPlaySpeed: 1500, // ms per flashcard flip/advance
     currentIndex: 0,
     currentWords: [],
     progress: {},      // key -> 'mastered' | 'learning'
@@ -667,32 +668,47 @@ function toggleAutoPlay() {
     if (autoPlayInterval) {
         clearInterval(autoPlayInterval);
         autoPlayInterval = null;
-        el.autoPlayFlashcardsBtn.textContent = 'Auto-Play (3s)';
+        el.autoPlayFlashcardsBtn.textContent = '▶ Auto-Play';
         el.autoPlayFlashcardsBtn.classList.remove('active');
     } else {
-        el.autoPlayFlashcardsBtn.textContent = 'Detener';
+        el.autoPlayFlashcardsBtn.textContent = '⏸ Detener';
         el.autoPlayFlashcardsBtn.classList.add('active');
 
+        const speed = state.autoPlaySpeed || 1500;
+
         const cycle = () => {
-            if (state.currentIndex >= state.currentWords.length - 1 && state.isFlipped) {
-                toggleAutoPlay();
-                return;
-            }
             if (!state.isFlipped) {
-                el.flashcard.click();
+                // Flip card to reveal back and pronunciation
+                state.isFlipped = true;
+                el.flashcard?.classList.add('flipped');
                 const word = state.currentWords[state.currentIndex];
                 if (word) speakText(word.word);
             } else {
+                // Advance to next card or seamlessly to next set
                 if (state.currentIndex < state.currentWords.length - 1) {
                     state.currentIndex++;
                     state.isFlipped = false;
+                    el.flashcard?.classList.remove('flipped');
                     updateDisplay();
                 } else {
-                    toggleAutoPlay();
+                    // Reached end of set: move to next set of 200 without freezing
+                    const setSelect = document.getElementById('setSelect');
+                    const totalSets = setSelect?.options?.length || 1;
+                    if (state.currentSet < totalSets) {
+                        state.currentSet++;
+                    } else {
+                        state.currentSet = 1;
+                    }
+                    if (setSelect) setSelect.value = state.currentSet;
+                    loadWords();
+                    state.currentIndex = 0;
+                    state.isFlipped = false;
+                    el.flashcard?.classList.remove('flipped');
+                    updateDisplay();
                 }
             }
         };
-        autoPlayInterval = setInterval(cycle, 2200);
+        autoPlayInterval = setInterval(cycle, speed);
     }
 }
 
@@ -2298,6 +2314,16 @@ function setupEventListeners() {
         if (state.currentIndex > 0) {
             state.currentIndex--;
             state.isFlipped = false;
+            el.flashcard?.classList.remove('flipped');
+            updateDisplay();
+        } else if (state.currentSet > 1) {
+            state.currentSet--;
+            const setSelect = document.getElementById('setSelect');
+            if (setSelect) setSelect.value = state.currentSet;
+            loadWords();
+            state.currentIndex = state.currentWords.length - 1;
+            state.isFlipped = false;
+            el.flashcard?.classList.remove('flipped');
             updateDisplay();
         }
     });
@@ -2306,12 +2332,45 @@ function setupEventListeners() {
         if (state.currentIndex < state.currentWords.length - 1) {
             state.currentIndex++;
             state.isFlipped = false;
+            el.flashcard?.classList.remove('flipped');
+            updateDisplay();
+        } else {
+            const setSelect = document.getElementById('setSelect');
+            const totalSets = setSelect?.options?.length || 1;
+            if (state.currentSet < totalSets) {
+                state.currentSet++;
+            } else {
+                state.currentSet = 1;
+            }
+            if (setSelect) setSelect.value = state.currentSet;
+            loadWords();
+            state.currentIndex = 0;
+            state.isFlipped = false;
+            el.flashcard?.classList.remove('flipped');
             updateDisplay();
         }
     });
 
     el.knowBtn?.addEventListener('click', () => markWord('mastered'));
     el.learningBtn?.addEventListener('click', () => markWord('learning'));
+
+    // Batch Size and Auto-Play Speed Selectors
+    const batchSizeSelect = document.getElementById('batchSizeSelect');
+    batchSizeSelect?.addEventListener('change', (e) => {
+        state.itemsPerSet = parseInt(e.target.value) || 200;
+        state.currentSet = 1;
+        loadWords();
+        updateDisplay();
+    });
+
+    const autoPlaySpeedSelect = document.getElementById('autoPlaySpeedSelect');
+    autoPlaySpeedSelect?.addEventListener('change', (e) => {
+        state.autoPlaySpeed = parseInt(e.target.value) || 1500;
+        if (autoPlayInterval) {
+            toggleAutoPlay();
+            toggleAutoPlay();
+        }
+    });
 
     // Audio Triggers
     const flashcardAudioBtn = document.getElementById('flashcardAudioBtn');

@@ -201,6 +201,21 @@ import '../styles/global.css';
           </div>
 
           <div class="flashcard-timer-controls">
+            <select id="batchSizeSelect" class="timer-select" title="Tamaño del lote de tarjetas">
+              <option value="200" selected>Lotes de 200</option>
+              <option value="100">Lotes de 100</option>
+              <option value="500">Lotes de 500</option>
+              <option value="1000">Todo el Set (1000)</option>
+              <option value="50">Lotes de 50</option>
+            </select>
+
+            <select id="autoPlaySpeedSelect" class="timer-select" title="Velocidad de Auto-Play">
+              <option value="800">⚡ 0.8s (Rápido)</option>
+              <option value="500">🚀 0.5s (Ultra Flash)</option>
+              <option value="1500" selected>📖 1.5s (Normal)</option>
+              <option value="2500">🐢 2.5s (Pausado)</option>
+            </select>
+
             <select id="timerSelect" class="timer-select" aria-label="Temporizador de estudio">
               <option value="0">Sin límite</option>
               <option value="5">5 Minutos</option>
@@ -210,7 +225,7 @@ import '../styles/global.css';
             </select>
             <span id="timerDisplay" class="timer-display">--:--</span>
             <button id="startTimerBtn" class="timer-btn">Iniciar</button>
-            <button class="quick-test-btn" id="autoPlayFlashcardsBtn" title="Reproduce automáticamente cada 3s para repaso pasivo">Auto-Play (3s)</button>
+            <button class="quick-test-btn" id="autoPlayFlashcardsBtn" title="Reproduce automáticamente sin trabarse de forma continua">▶ Auto-Play</button>
           </div>
         </div>
 
