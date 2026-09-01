@@ -337,11 +337,37 @@ import '../styles/global.css';
       <section class="rsvp-container hidden" id="rsvpMode">
         <div class="mode-header-badge">
           <h2>Lectura Rápida RSVP & Fonética en Tiempo Real</h2>
-          <p>Entrena tu velocidad visual, elimina la traducción interna fijando el punto ORP (rojo) y asimila la pronunciación figurada.</p>
+          <p>Entrena tu velocidad visual, elimina la traducción mental fijando el punto ORP (letra roja) y asimila estructuras completas.</p>
+        </div>
+
+        <!-- How it works guide -->
+        <div class="rsvp-guide-card">
+          <div class="rsvp-guide-icon">💡</div>
+          <div class="rsvp-guide-content">
+            <strong>¿Cómo funciona el método RSVP?</strong>
+            <p>Fija tu mirada en la letra roja central (ORP). Tu cerebro absorberá cada palabra en milisegundos sin mover los ojos. Si quieres pausar, releer o analizar la gramática, usa los botones de <strong>retroceso</strong> o haz clic en cualquier palabra de la oración.</p>
+          </div>
+        </div>
+
+        <!-- Grammar & Context Intelligence Card -->
+        <div class="rsvp-grammar-box hidden" id="rsvpGrammarBox">
+          <div class="rsvp-grammar-header">
+            <span class="rsvp-tense-badge" id="rsvpTenseBadge">Pasado vs Perfecto</span>
+            <span class="rsvp-rule-tag" id="rsvpRuleTag">Regla Cognitiva</span>
+          </div>
+          <p class="rsvp-grammar-rule" id="rsvpGrammarRule">Regla gramatical activa...</p>
         </div>
 
         <div class="rsvp-display-box">
-          <div class="rsvp-viewport">
+          <!-- Top bar with Sentence and Word Counter -->
+          <div class="rsvp-top-status-bar">
+            <span class="rsvp-status-badge" id="rsvpSentenceCounter">Oración 1 / 1</span>
+            <span class="rsvp-status-badge highlight" id="rsvpWordProgress">Palabra 1 de 1</span>
+            <span class="rsvp-status-badge" id="rsvpPlaybackStatus">Pausado</span>
+          </div>
+
+          <!-- RSVP Viewport with ORP crosshairs -->
+          <div class="rsvp-viewport" id="rsvpViewport">
             <div class="rsvp-crosshair-top"></div>
             <div class="rsvp-word-display">
               <span class="rsvp-left" id="rsvpLeft">rea</span>
@@ -351,40 +377,93 @@ import '../styles/global.css';
             <div class="rsvp-crosshair-bottom"></div>
           </div>
 
+          <!-- Phonetic and Meaning bar -->
           <div class="rsvp-phonetic-bar" id="rsvpPhoneticBar">
             <span class="rsvp-phonetic-text" id="rsvpPhoneticText">/ríd-ing/</span>
             <span class="rsvp-meaning-text" id="rsvpMeaningText">Significado: leyendo / lectura</span>
           </div>
 
-          <div class="rsvp-context-snippet" id="rsvpSnippet">
-            Presiona "Comenzar RSVP" para iniciar el flujo de alta velocidad sin traducir mentalmente.
+          <!-- Interactive Full Sentence Word Scrubber / Timeline -->
+          <div class="rsvp-tokens-section">
+            <div class="rsvp-tokens-header">
+              <span>Oración completa (haz clic en cualquier palabra para saltar / retroceder):</span>
+              <button class="rsvp-mini-action-btn" id="rsvpAudioBtn" title="Escuchar pronunciación nativa">
+                🔊 Escuchar
+              </button>
+            </div>
+            <div class="rsvp-tokens-container" id="rsvpSentenceTokens">
+              <!-- Dynamically populated word token chips -->
+            </div>
           </div>
         </div>
 
+        <!-- Comprehensive RSVP Control Suite -->
         <div class="rsvp-controls-panel">
-          <div class="rsvp-speed-slider-group">
-            <label for="rsvpSourceSelect">Fuente:</label>
-            <select id="rsvpSourceSelect" class="timer-select" style="min-width: 170px;">
-              <option value="vocab" selected>Vocabulario del Set</option>
-              <option value="grammar">Pasado vs Perfecto</option>
-              <option value="custom">Texto Personalizado</option>
-            </select>
+          <!-- Main Playback & Stepping Actions (Backwards + Forwards) -->
+          <div class="rsvp-nav-row">
+            <button class="action-btn rsvp-nav-btn secondary" id="rsvpPrevSentenceBtn" title="Oración anterior (Shift + ←)">
+              ⏮ Oración Anterior
+            </button>
+            <button class="action-btn rsvp-step-btn" id="rsvpPrevWordBtn" title="Retroceder 1 palabra (←)">
+              ⏪ -1 Palabra
+            </button>
+            <button class="action-btn primary rsvp-play-btn" id="rsvpToggleBtn" title="Comenzar / Pausar (Espacio)">
+              ▶ Comenzar RSVP
+            </button>
+            <button class="action-btn rsvp-step-btn" id="rsvpNextWordBtn" title="Avanzar 1 palabra (→)">
+              +1 Palabra ⏩
+            </button>
+            <button class="action-btn rsvp-nav-btn secondary" id="rsvpNextSentenceBtn" title="Siguiente oración (Shift + →)">
+              Siguiente Oración ⏭
+            </button>
+            <button class="action-btn icon-btn" id="rsvpRestartBtn" title="Reiniciar oración actual desde el inicio (R)">
+              🔄 Reiniciar
+            </button>
           </div>
 
-          <div class="rsvp-speed-slider-group">
-            <label for="rsvpWpmSlider">Velocidad:</label>
-            <input type="range" id="rsvpWpmSlider" class="rsvp-slider" min="150" max="650" step="25" value="350">
-            <span class="wpm-badge" id="rsvpWpmLabel">350 WPM</span>
-          </div>
+          <!-- Settings Row: Source, Speed Slider, Speed Presets, Auto-advance -->
+          <div class="rsvp-settings-row">
+            <div class="rsvp-setting-item">
+              <label for="rsvpSourceSelect"><strong>Fuente:</strong></label>
+              <select id="rsvpSourceSelect" class="timer-select" style="min-width: 170px;">
+                <option value="vocab" selected>Vocabulario del Set</option>
+                <option value="grammar">Pasado vs Perfecto</option>
+                <option value="custom">Texto Personalizado</option>
+              </select>
+            </div>
 
-          <div class="rsvp-actions">
-            <button class="action-btn" id="rsvpToggleBtn">Comenzar RSVP</button>
-            <button class="action-btn" id="rsvpNextSentenceBtn">Siguiente Oración &rarr;</button>
+            <div class="rsvp-setting-item rsvp-presets-group">
+              <span class="setting-label">Presets:</span>
+              <div class="rsvp-presets-buttons">
+                <button type="button" class="rsvp-preset-btn" data-wpm="150" title="150 WPM - Paso lento / Principiante">🐢 150</button>
+                <button type="button" class="rsvp-preset-btn active" data-wpm="220" title="220 WPM - Aprendizaje cómodo">📖 220</button>
+                <button type="button" class="rsvp-preset-btn" data-wpm="320" title="320 WPM - Velocidad intermedia">⚡ 320</button>
+                <button type="button" class="rsvp-preset-btn" data-wpm="450" title="450 WPM - Lectura veloz avanzada">🚀 450</button>
+              </div>
+            </div>
+
+            <div class="rsvp-setting-item rsvp-slider-item">
+              <label for="rsvpWpmSlider"><strong>Velocidad:</strong></label>
+              <input type="range" id="rsvpWpmSlider" class="rsvp-slider" min="100" max="600" step="20" value="220">
+              <span class="wpm-badge" id="rsvpWpmLabel">220 WPM</span>
+            </div>
+
+            <div class="rsvp-setting-item rsvp-checkbox-item">
+              <label class="rsvp-checkbox-label">
+                <input type="checkbox" id="rsvpAutoAdvanceCheck">
+                <span>Auto-avanzar al terminar oración</span>
+              </label>
+            </div>
           </div>
         </div>
 
         <div class="custom-rsvp-input-box hidden" id="rsvpCustomBox" style="width: 100%; max-width: 680px; margin-top: 8px;">
-          <input type="text" id="rsvpCustomTextInput" class="typing-input" placeholder="Pega cualquier texto en inglés para leer a máxima velocidad..." style="width: 100%;">
+          <input type="text" id="rsvpCustomTextInput" class="typing-input" placeholder="Pega cualquier texto en inglés para leer palabra por palabra a tu ritmo..." style="width: 100%;">
+        </div>
+
+        <!-- RSVP Keyboard Shortcuts Hint Footer -->
+        <div class="keyboard-hints">
+          <span>Atajos RSVP: <kbd>Espacio</kbd> Play / Pausa &nbsp;|&nbsp; <kbd>&larr;</kbd> Palabra atrás &nbsp;|&nbsp; <kbd>&rarr;</kbd> Palabra adelante &nbsp;|&nbsp; <kbd>Shift + &larr;</kbd> <kbd>&rarr;</kbd> Oración anterior / siguiente &nbsp;|&nbsp; <kbd>R</kbd> Reiniciar &nbsp;|&nbsp; <kbd>A</kbd> Audio</span>
         </div>
       </section>
 

@@ -30,12 +30,13 @@ const rsvpState = {
     source: 'vocab', // 'vocab' | 'grammar' | 'custom'
     words: [],
     wordIndex: 0,
-    wpm: 350,
+    wpm: 220,
     isPlaying: false,
     intervalId: null,
     currentSentence: '',
     currentPhonetic: '',
-    currentMeaning: ''
+    currentMeaning: '',
+    autoAdvance: false
 };
 
 const grammarState = {
@@ -594,7 +595,7 @@ function toggleAutoPlay() {
     }
 }
 
-// ===== RSVP Speed Reader Engine (with live phonetics) =====
+// ===== RSVP Speed Reader Engine (with live phonetics & backward navigation) =====
 function calculateORPIndex(word) {
     const len = word.length;
     if (len <= 1) return 0;
@@ -602,6 +603,18 @@ function calculateORPIndex(word) {
     if (len <= 9) return 2;
     if (len <= 13) return 3;
     return 4;
+}
+
+function formatTenseLabel(tenseType) {
+    switch (tenseType) {
+        case 'past-simple': return 'Pasado Simple (Past Simple)';
+        case 'present-perfect': return 'Presente Perfecto (Present Perfect)';
+        case 'present-perfect-continuous': return 'Presente Perfecto Continuo';
+        case 'past-perfect': return 'Pasado Perfecto (Past Perfect)';
+        case 'past-perfect-continuous': return 'Pasado Perfecto Continuo';
+        case 'contrast': return 'Contraste Clave: Pasado vs Perfecto';
+        default: return tenseType || 'Estructura Gramatical';
+    }
 }
 
 function applyGrammarFilters() {
@@ -632,47 +645,125 @@ function applyGrammarFilters() {
     }
 }
 
-function initRSVP() {
+function initRSVP(keepIndex = false) {
     stopRSVP();
+
+    const grammarBox = document.getElementById('rsvpGrammarBox');
+    const tenseBadge = document.getElementById('rsvpTenseBadge');
+    const grammarRule = document.getElementById('rsvpGrammarRule');
+    const sentenceCounter = document.getElementById('rsvpSentenceCounter');
 
     if (rsvpState.source === 'grammar') {
         if (!grammarState.filteredItems || grammarState.filteredItems.length === 0) applyGrammarFilters();
+        const totalGrammar = grammarState.filteredItems.length || 1;
         const item = grammarState.filteredItems[grammarState.currentIndex] || PAST_PERFECT_LATIN_DATASET[0];
         if (item) {
             rsvpState.currentSentence = item.english;
             rsvpState.currentPhonetic = item.phonetic;
             rsvpState.currentMeaning = item.spanishNeutral;
         }
+
+        if (grammarBox) grammarBox.classList.remove('hidden');
+        if (tenseBadge && item) tenseBadge.textContent = formatTenseLabel(item.tenseType);
+        if (grammarRule && item) {
+            const trapTxt = item.latinTrap ? ` • 💡 Ojo: ${item.latinTrap}` : '';
+            grammarRule.textContent = `${item.cognitiveRule}${trapTxt}`;
+        }
+        if (sentenceCounter) {
+            sentenceCounter.textContent = `Oración ${grammarState.currentIndex + 1} / ${totalGrammar}`;
+        }
     } else if (rsvpState.source === 'custom') {
         const customInput = document.getElementById('rsvpCustomTextInput');
         const txt = (customInput?.value || '').trim();
-        rsvpState.currentSentence = txt || 'Please paste your English text to speed read.';
+        rsvpState.currentSentence = txt || 'Please paste your English text to speed read word by word.';
         rsvpState.currentPhonetic = '/fonética personalizada/';
         rsvpState.currentMeaning = 'Texto personalizado del usuario';
+
+        if (grammarBox) grammarBox.classList.add('hidden');
+        if (sentenceCounter) {
+            sentenceCounter.textContent = `Texto Personalizado`;
+        }
     } else {
         // default vocab
         const word = state.currentWords[state.currentIndex];
+        const totalVocab = state.currentWords.length || 1;
         if (word) {
             rsvpState.currentSentence = word.example || `${word.word} is a key concept in English.`;
             rsvpState.currentPhonetic = word.phonetic ? `/${word.phonetic}/` : `/${word.word}/`;
             rsvpState.currentMeaning = word.translation_es || word.translation;
         }
+
+        if (grammarBox) {
+            grammarBox.classList.remove('hidden');
+            if (tenseBadge && word) tenseBadge.textContent = `Vocabulario: ${word.word}`;
+            if (grammarRule && word) {
+                grammarRule.textContent = `Categoría: ${getWordType(word)} (${getWordRegister(word)}) • Significado: ${word.translation_es || word.translation}`;
+            }
+        }
+        if (sentenceCounter) {
+            sentenceCounter.textContent = `Elemento ${state.currentIndex + 1} / ${totalVocab}`;
+        }
     }
 
-    rsvpState.words = rsvpState.currentSentence.trim().split(/\s+/);
-    rsvpState.wordIndex = 0;
-
-    renderRSVPWord(rsvpState.words[0] || 'reading');
-
-    const snippet = document.getElementById('rsvpSnippet');
-    if (snippet) {
-        snippet.textContent = `Oración activa: "${rsvpState.currentSentence}"`;
+    rsvpState.words = rsvpState.currentSentence.trim().split(/\s+/).filter(w => w.length > 0);
+    if (!keepIndex || rsvpState.wordIndex >= rsvpState.words.length || rsvpState.wordIndex < 0) {
+        rsvpState.wordIndex = 0;
     }
+
+    renderRSVPWord(rsvpState.words[rsvpState.wordIndex] || 'reading');
+    renderRSVPTokens();
+    updateRSVPWordProgress();
 
     const pText = document.getElementById('rsvpPhoneticText');
     const mText = document.getElementById('rsvpMeaningText');
     if (pText) pText.textContent = `Pronunciación: ${rsvpState.currentPhonetic}`;
     if (mText) mText.textContent = `Significado: ${rsvpState.currentMeaning}`;
+
+    const pbStatus = document.getElementById('rsvpPlaybackStatus');
+    if (pbStatus) pbStatus.textContent = 'Pausado';
+}
+
+function renderRSVPTokens() {
+    const container = document.getElementById('rsvpSentenceTokens');
+    if (!container) return;
+
+    container.innerHTML = '';
+    rsvpState.words.forEach((w, idx) => {
+        const token = document.createElement('button');
+        token.type = 'button';
+        token.className = `rsvp-token ${idx === rsvpState.wordIndex ? 'active' : ''}`;
+        token.dataset.index = idx.toString();
+        token.textContent = w;
+        token.title = `Saltar a la palabra "${w}" (#${idx + 1})`;
+        token.addEventListener('click', () => {
+            jumpToRSVPWord(idx);
+        });
+        container.appendChild(token);
+    });
+}
+
+function updateRSVPTokenHighlight() {
+    const container = document.getElementById('rsvpSentenceTokens');
+    if (!container) return;
+
+    const tokens = container.querySelectorAll('.rsvp-token');
+    tokens.forEach((t, idx) => {
+        const isActive = idx === rsvpState.wordIndex;
+        t.classList.toggle('active', isActive);
+        if (isActive) {
+            t.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        }
+    });
+    updateRSVPWordProgress();
+}
+
+function updateRSVPWordProgress() {
+    const wordProgress = document.getElementById('rsvpWordProgress');
+    if (wordProgress) {
+        const total = rsvpState.words.length || 1;
+        const current = Math.min(rsvpState.wordIndex + 1, total);
+        wordProgress.textContent = `Palabra ${current} de ${total}`;
+    }
 }
 
 function renderRSVPWord(rawWord) {
@@ -693,6 +784,88 @@ function renderRSVPWord(rawWord) {
     if (elRight) elRight.textContent = rightPart;
 }
 
+function stepRSVPWord(direction) {
+    if (rsvpState.words.length === 0) return;
+    if (rsvpState.isPlaying) stopRSVP();
+
+    const newIndex = rsvpState.wordIndex + direction;
+    if (newIndex >= 0 && newIndex < rsvpState.words.length) {
+        rsvpState.wordIndex = newIndex;
+    } else if (newIndex < 0) {
+        rsvpState.wordIndex = 0;
+    } else if (newIndex >= rsvpState.words.length) {
+        rsvpState.wordIndex = rsvpState.words.length - 1;
+    }
+
+    renderRSVPWord(rsvpState.words[rsvpState.wordIndex]);
+    updateRSVPTokenHighlight();
+
+    const pbStatus = document.getElementById('rsvpPlaybackStatus');
+    if (pbStatus) pbStatus.textContent = 'Paso a paso';
+}
+
+function jumpToRSVPWord(idx) {
+    if (rsvpState.words.length === 0) return;
+    if (rsvpState.isPlaying) stopRSVP();
+
+    if (idx >= 0 && idx < rsvpState.words.length) {
+        rsvpState.wordIndex = idx;
+        renderRSVPWord(rsvpState.words[rsvpState.wordIndex]);
+        updateRSVPTokenHighlight();
+        const pbStatus = document.getElementById('rsvpPlaybackStatus');
+        if (pbStatus) pbStatus.textContent = 'Pausado';
+    }
+}
+
+function prevRSVPSentence() {
+    const wasPlaying = rsvpState.isPlaying;
+    stopRSVP();
+
+    if (rsvpState.source === 'grammar') {
+        if (!grammarState.filteredItems || grammarState.filteredItems.length === 0) applyGrammarFilters();
+        const total = grammarState.filteredItems.length || 1;
+        grammarState.currentIndex = (grammarState.currentIndex - 1 + total) % total;
+    } else if (rsvpState.source === 'vocab') {
+        const total = state.currentWords.length || 1;
+        state.currentIndex = (state.currentIndex - 1 + total) % total;
+    }
+
+    initRSVP();
+    if (wasPlaying) startRSVP();
+}
+
+function nextRSVPSentence() {
+    const wasPlaying = rsvpState.isPlaying;
+    stopRSVP();
+
+    if (rsvpState.source === 'grammar') {
+        if (!grammarState.filteredItems || grammarState.filteredItems.length === 0) applyGrammarFilters();
+        const total = grammarState.filteredItems.length || 1;
+        grammarState.currentIndex = (grammarState.currentIndex + 1) % total;
+    } else if (rsvpState.source === 'vocab') {
+        const total = state.currentWords.length || 1;
+        state.currentIndex = (state.currentIndex + 1) % total;
+    }
+
+    initRSVP();
+    if (wasPlaying) startRSVP();
+}
+
+function restartRSVPSentence() {
+    stopRSVP();
+    rsvpState.wordIndex = 0;
+    renderRSVPWord(rsvpState.words[0] || 'reading');
+    updateRSVPTokenHighlight();
+    const pbStatus = document.getElementById('rsvpPlaybackStatus');
+    if (pbStatus) pbStatus.textContent = 'Reiniciado al inicio';
+}
+
+function speakRSVPSentence() {
+    if (rsvpState.currentSentence) {
+        speakText(rsvpState.currentSentence);
+    }
+}
+
 function toggleRSVP() {
     if (rsvpState.isPlaying) {
         stopRSVP();
@@ -703,10 +876,16 @@ function toggleRSVP() {
 
 function startRSVP() {
     if (rsvpState.words.length === 0) initRSVP();
+    if (rsvpState.wordIndex >= rsvpState.words.length) {
+        rsvpState.wordIndex = 0;
+    }
     rsvpState.isPlaying = true;
 
     const toggleBtn = document.getElementById('rsvpToggleBtn');
-    if (toggleBtn) toggleBtn.textContent = 'Pausar RSVP';
+    if (toggleBtn) toggleBtn.textContent = '⏸ Pausar RSVP';
+
+    const pbStatus = document.getElementById('rsvpPlaybackStatus');
+    if (pbStatus) pbStatus.textContent = `▶ Leyendo (${rsvpState.wpm} WPM)`;
 
     const delayMs = Math.round(60000 / rsvpState.wpm);
 
@@ -714,30 +893,31 @@ function startRSVP() {
         if (!rsvpState.isPlaying) return;
 
         if (rsvpState.wordIndex >= rsvpState.words.length) {
-            rsvpState.wordIndex = 0;
-            // Short pause at end of sentence then next sentence
-            rsvpState.intervalId = setTimeout(() => {
-                if (rsvpState.source === 'grammar') {
-                    if (!grammarState.filteredItems || grammarState.filteredItems.length === 0) applyGrammarFilters();
-                    grammarState.currentIndex = (grammarState.currentIndex + 1) % grammarState.filteredItems.length;
-                } else if (rsvpState.source === 'vocab') {
-                    state.currentIndex = (state.currentIndex + 1) % state.currentWords.length;
-                }
-                initRSVP();
-                startRSVP();
-            }, 650);
+            if (rsvpState.autoAdvance) {
+                // Short pause then advance to next sentence
+                rsvpState.intervalId = setTimeout(() => {
+                    nextRSVPSentence();
+                    startRSVP();
+                }, 850);
+            } else {
+                stopRSVP();
+                const statusEl = document.getElementById('rsvpPlaybackStatus');
+                if (statusEl) statusEl.textContent = '✔ Oración completada';
+                if (toggleBtn) toggleBtn.textContent = '🔄 Repetir Oración';
+            }
             return;
         }
 
         const currentToken = rsvpState.words[rsvpState.wordIndex];
         renderRSVPWord(currentToken);
+        updateRSVPTokenHighlight();
         rsvpState.wordIndex++;
 
         // Add slight extra delay for punctuation
         let actualDelay = delayMs;
         if (currentToken.endsWith('.') || currentToken.endsWith('!') || currentToken.endsWith('?')) {
             actualDelay = delayMs * 1.8;
-        } else if (currentToken.endsWith(',') || currentToken.endsWith(';')) {
+        } else if (currentToken.endsWith(',') || currentToken.endsWith(';') || currentToken.endsWith(':')) {
             actualDelay = delayMs * 1.4;
         }
 
@@ -754,7 +934,12 @@ function stopRSVP() {
         rsvpState.intervalId = null;
     }
     const toggleBtn = document.getElementById('rsvpToggleBtn');
-    if (toggleBtn) toggleBtn.textContent = 'Comenzar RSVP';
+    if (toggleBtn) toggleBtn.textContent = '▶ Comenzar RSVP';
+
+    const pbStatus = document.getElementById('rsvpPlaybackStatus');
+    if (pbStatus && pbStatus.textContent.startsWith('▶ Leyendo')) {
+        pbStatus.textContent = 'Pausado';
+    }
 }
 
 // ===== Grammar Anti-Translation Engine (Past vs Perfect) =====
@@ -1951,15 +2136,12 @@ function setupEventListeners() {
 
     // RSVP Engine Triggers
     document.getElementById('rsvpToggleBtn')?.addEventListener('click', toggleRSVP);
-    document.getElementById('rsvpNextSentenceBtn')?.addEventListener('click', () => {
-        if (rsvpState.source === 'grammar') {
-            grammarState.currentIndex = (grammarState.currentIndex + 1) % PAST_PERFECT_LATIN_DATASET.length;
-        } else if (rsvpState.source === 'vocab') {
-            state.currentIndex = (state.currentIndex + 1) % state.currentWords.length;
-        }
-        initRSVP();
-        if (rsvpState.isPlaying) startRSVP();
-    });
+    document.getElementById('rsvpPrevSentenceBtn')?.addEventListener('click', prevRSVPSentence);
+    document.getElementById('rsvpNextSentenceBtn')?.addEventListener('click', nextRSVPSentence);
+    document.getElementById('rsvpPrevWordBtn')?.addEventListener('click', () => stepRSVPWord(-1));
+    document.getElementById('rsvpNextWordBtn')?.addEventListener('click', () => stepRSVPWord(1));
+    document.getElementById('rsvpRestartBtn')?.addEventListener('click', restartRSVPSentence);
+    document.getElementById('rsvpAudioBtn')?.addEventListener('click', speakRSVPSentence);
 
     const rsvpSourceSelect = document.getElementById('rsvpSourceSelect');
     rsvpSourceSelect?.addEventListener('change', (e) => {
@@ -1977,23 +2159,49 @@ function setupEventListeners() {
         if (customText.length > 0) {
             stopRSVP();
             rsvpState.currentSentence = customText;
-            rsvpState.words = customText.split(/\s+/);
+            rsvpState.words = customText.split(/\s+/).filter(w => w.length > 0);
             rsvpState.wordIndex = 0;
-            renderRSVPWord(rsvpState.words[0]);
-            const snippet = document.getElementById('rsvpSnippet');
-            if (snippet) snippet.textContent = `Texto personalizado: "${customText}"`;
+            renderRSVPWord(rsvpState.words[0] || 'reading');
+            renderRSVPTokens();
+            updateRSVPWordProgress();
         }
     });
 
     const wpmSlider = document.getElementById('rsvpWpmSlider');
     const wpmLabel = document.getElementById('rsvpWpmLabel');
+    const updatePresetButtons = (wpm) => {
+        document.querySelectorAll('.rsvp-preset-btn').forEach(btn => {
+            btn.classList.toggle('active', parseInt(btn.dataset.wpm) === wpm);
+        });
+    };
+
     wpmSlider?.addEventListener('input', (e) => {
-        rsvpState.wpm = parseInt(e.target.value) || 350;
+        rsvpState.wpm = parseInt(e.target.value) || 220;
         if (wpmLabel) wpmLabel.textContent = `${rsvpState.wpm} WPM`;
+        updatePresetButtons(rsvpState.wpm);
         if (rsvpState.isPlaying) {
             stopRSVP();
             startRSVP();
         }
+    });
+
+    document.querySelectorAll('.rsvp-preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const wpm = parseInt(btn.dataset.wpm) || 220;
+            rsvpState.wpm = wpm;
+            if (wpmSlider) wpmSlider.value = wpm;
+            if (wpmLabel) wpmLabel.textContent = `${wpm} WPM`;
+            updatePresetButtons(wpm);
+            if (rsvpState.isPlaying) {
+                stopRSVP();
+                startRSVP();
+            }
+        });
+    });
+
+    const autoAdvanceCheck = document.getElementById('rsvpAutoAdvanceCheck');
+    autoAdvanceCheck?.addEventListener('change', (e) => {
+        rsvpState.autoAdvance = e.target.checked;
     });
 
     // Grammar Anti-Translation Engine Listeners
@@ -2220,6 +2428,29 @@ function setupEventListeners() {
             } else if (e.key.toLowerCase() === 'a') {
                 const word = state.currentWords[state.currentIndex];
                 if (word) speakText(state.isFlipped ? word.example : word.word);
+            }
+        } else if (state.currentMode === 'rsvp') {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                toggleRSVP();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                if (e.shiftKey) {
+                    prevRSVPSentence();
+                } else {
+                    stepRSVPWord(-1);
+                }
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                if (e.shiftKey) {
+                    nextRSVPSentence();
+                } else {
+                    stepRSVPWord(1);
+                }
+            } else if (e.key.toLowerCase() === 'r') {
+                restartRSVPSentence();
+            } else if (e.key.toLowerCase() === 'a') {
+                speakRSVPSentence();
             }
         }
     });
