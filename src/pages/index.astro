@@ -77,9 +77,143 @@ import '../styles/global.css';
 
     <!-- Main Content Area -->
     <main class="main">
-      <!-- Category Selection Navigation -->
-      <nav class="category-nav" id="categoryNav">
-        <button class="category-btn active" data-category="core">
+      <!-- Track Selector Hub (3 Rutas Especializadas) -->
+      <section class="track-hub" id="trackHub" aria-label="Rutas Especializadas de Aprendizaje">
+        <!-- Ruta 1 -->
+        <button class="track-card active" data-track="basic" id="trackCardBasic">
+          <div class="track-card-top">
+            <span class="track-card-badge">[RUTA 1: BÁSICO]</span>
+            <span class="track-card-status" id="trackStatusBasic">[ACTIVA]</span>
+          </div>
+          <div class="track-card-main">
+            <h2 class="track-card-title">Fundamentos & Core 1000</h2>
+            <p class="track-card-desc">Asimila el 75% del inglés cotidiano paso a paso. Fonética visual, mnemotecnias y repaso sin presión de tiempo.</p>
+          </div>
+          <div class="track-card-meta">
+            <div class="track-card-pill">
+              <span class="pill-kicker">RITMO</span>
+              <strong>Paso a Paso</strong>
+            </div>
+            <div class="track-card-pill">
+              <span class="pill-kicker">ENFOQUE</span>
+              <strong>Input & Retención</strong>
+            </div>
+            <div class="track-card-pill">
+              <span class="pill-kicker">META</span>
+              <strong>15 palabras/día</strong>
+            </div>
+          </div>
+        </button>
+
+        <!-- Ruta 2 -->
+        <button class="track-card" data-track="intensive" id="trackCardIntensive">
+          <div class="track-card-top">
+            <span class="track-card-badge hot">[RUTA 2: INTENSIVO]</span>
+            <span class="track-card-status hidden" id="trackStatusIntensive">[ACTIVA]</span>
+          </div>
+          <div class="track-card-main">
+            <h2 class="track-card-title">Cyber Arena & Hardcore</h2>
+            <p class="track-card-desc">Alta adrenalina y velocidad (&lt;4s). Duelos contra ShadowDev, micro-desafíos IT/Cyber y loop de errores.</p>
+          </div>
+          <div class="track-card-meta">
+            <div class="track-card-pill">
+              <span class="pill-kicker">RITMO</span>
+              <strong>Contrarreloj</strong>
+            </div>
+            <div class="track-card-pill">
+              <span class="pill-kicker">ENFOQUE</span>
+              <strong>Duelo & Velocidad</strong>
+            </div>
+            <div class="track-card-pill">
+              <span class="pill-kicker">META</span>
+              <strong>300 XP/día</strong>
+            </div>
+          </div>
+        </button>
+
+        <!-- Ruta 3 -->
+        <button class="track-card" data-track="chill" id="trackCardChill">
+          <div class="track-card-top">
+            <span class="track-card-badge chill">[RUTA 3: CHILL]</span>
+            <span class="track-card-status hidden" id="trackStatusChill">[ACTIVA]</span>
+          </div>
+          <div class="track-card-main">
+            <h2 class="track-card-title">Inmersión & Flow</h2>
+            <p class="track-card-desc">Flujo continuo sin estrés. Lectura rápida en thought groups, modismos de USA, parejas y diálogos con IA.</p>
+          </div>
+          <div class="track-card-meta">
+            <div class="track-card-pill">
+              <span class="pill-kicker">RITMO</span>
+              <strong>Sin Estrés</strong>
+            </div>
+            <div class="track-card-pill">
+              <span class="pill-kicker">ENFOQUE</span>
+              <strong>Fluidez & Slang</strong>
+            </div>
+            <div class="track-card-pill">
+              <span class="pill-kicker">META</span>
+              <strong>10 min/día</strong>
+            </div>
+          </div>
+        </button>
+      </section>
+
+      <!-- Cockpit Layout: 2-Column Professional Workspace -->
+      <div class="cockpit-layout" id="cockpitLayout">
+        <!-- Lateral Guide & Route Controller (Left Rail) -->
+        <aside class="cockpit-sidebar" id="cockpitSidebar">
+          <div class="sidebar-track-header">
+            <span class="sidebar-track-badge" id="sidebarTrackBadge">[RUTA 1: BÁSICO]</span>
+            <h3 class="sidebar-track-title" id="sidebarTrackTitle">Fundamentos & Core 1000</h3>
+            <p class="sidebar-track-desc" id="sidebarTrackDesc">Asimila el 75% del inglés cotidiano con fonética y repetición espaciada.</p>
+          </div>
+
+          <div class="sidebar-pipeline-box">
+            <div class="pipeline-header-row">
+              <span class="pipeline-kicker">SECUENCIA GUIADA</span>
+              <span class="pipeline-progress-fraction" id="pipelineProgressFraction">Paso 1 de 3</span>
+            </div>
+
+            <div class="pipeline-steps-list" id="pipelineStepsList">
+              <!-- Dynamically populated step items -->
+            </div>
+
+            <button class="track-continue-btn" id="trackContinueBtn">
+              <span>CONTINUAR RUTA: SIGUIENTE PASO</span>
+              <span class="cta-arrow">&rarr;</span>
+            </button>
+          </div>
+
+          <!-- Track Quick Stats -->
+          <div class="sidebar-stats-box">
+            <div class="sidebar-stat-row">
+              <span class="stat-lbl">Estado</span>
+              <strong class="stat-val" id="sidebarSessionStatus">Ruta Activa</strong>
+            </div>
+            <div class="sidebar-stat-row">
+              <span class="stat-lbl">Racha</span>
+              <strong class="stat-val highlight" id="sidebarStreakVal">0 Días</strong>
+            </div>
+            <div class="sidebar-stat-row">
+              <span class="stat-lbl">XP Sesión</span>
+              <strong class="stat-val" id="sidebarXpVal">0 XP</strong>
+            </div>
+          </div>
+
+          <!-- Recommended Modes for this Track -->
+          <div class="sidebar-modes-group">
+            <span class="sidebar-modes-label">MODOS DE ESTA RUTA</span>
+            <div class="sidebar-modes-chips" id="sidebarModesChips">
+              <!-- Dynamically populated mode chips -->
+            </div>
+          </div>
+        </aside>
+
+        <!-- Main Workspace Stage (Right Stage) -->
+        <div class="cockpit-stage" id="cockpitStage">
+          <!-- Category Selection Navigation -->
+          <nav class="category-nav" id="categoryNav">
+            <button class="category-btn active" data-category="core">
           <span class="category-icon">1K</span>
           <div class="category-info">
             <span class="category-label">Core 1000</span>
@@ -135,8 +269,41 @@ import '../styles/global.css';
         </div>
       </div>
 
+      <!-- CYBER ARENA HERO BANNER WIDGET -->
+      <div class="cyber-arena-hero-banner" id="cyberArenaHeroBanner">
+        <div class="hero-arena-left">
+          <div class="hero-arena-badge">[ARENA]</div>
+          <div class="hero-arena-titles">
+            <h3 class="hero-arena-headline">CYBER ARENA: INGLÉS TÉCNICO & COTIDIANO</h3>
+            <p class="hero-arena-sub">Duelo en tiempo real contra ShadowDev • Micro-desafíos de alta adrenalina</p>
+          </div>
+        </div>
+        <div class="hero-arena-stats">
+          <div class="hero-stat-pill">
+            <span class="pill-lbl">LIGA</span>
+            <strong class="pill-val" id="heroBannerDivision">División I</strong>
+          </div>
+          <div class="hero-stat-pill">
+            <span class="pill-lbl">RANKING</span>
+            <strong class="pill-val" id="heroBannerPercentile">Top 65%</strong>
+          </div>
+          <div class="hero-stat-pill">
+            <span class="pill-lbl">RACHA</span>
+            <strong class="pill-val fire" id="heroBannerStreak">0 Días</strong>
+          </div>
+          <button class="hero-arena-cta-btn" id="heroBannerLaunchBtn">
+            <span>ENTRAR A LA ARENA</span>
+            <span class="cta-arrow">&rarr;</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Mode Selection Bar -->
       <div class="mode-nav" id="modeNav">
+        <button class="mode-btn arcade-nav-pill" data-mode="arcade">
+          <span class="arcade-pill-icon">[ARCADE]</span>
+          <span>Arena</span>
+        </button>
         <button class="mode-btn active" data-mode="flashcard">
           Tarjetas
         </button>
@@ -169,29 +336,171 @@ import '../styles/global.css';
         </button>
       </div>
 
+      <!-- 0. Videojuego Misiones Arcade (Julebu Benchmark & Alex Rawlings Immersion) -->
+      <section class="arcade-container hidden" id="arcadeMode">
+        <!-- Reactive Byte Mascot -->
+        <div class="arcade-mascot-wrapper">
+          <div class="arcade-mascot-avatar mood-idle" id="arcadeMascot">
+            <span class="mascot-face-icon">AI</span>
+            <div class="mascot-pulse-ring"></div>
+          </div>
+          <div class="arcade-mascot-bubble hidden" id="arcadeMascotBubble">
+            Listo para la misión.
+          </div>
+        </div>
+
+        <!-- VIEW A: Mission Hub Overview (Dashboard & Mission Select) -->
+        <div class="arcade-hub-view" id="arcadeHubView">
+          <div class="arcade-hub-hero">
+            <div class="arcade-hero-info">
+              <span class="arcade-kicker">VIDEOJUEGO DE APRENDIZAJE - JULEBU BENCHMARK</span>
+              <h2>Arena de Misiones: Ciberseguridad, Tech & Vida Cotidiana</h2>
+              <p>Entrena con frases contextualizadas de alta frecuencia y situaciones de alta presión con micro-desafíos, combos dinámicos y repetición activa.</p>
+            </div>
+            
+            <div class="arcade-hub-profile-card">
+              <div class="hub-stat-item">
+                <span class="hub-stat-val fire" id="arcadeHubStreakCount">0 Días</span>
+                <span class="hub-stat-lbl">Racha Diaria</span>
+              </div>
+              <div class="hub-stat-item">
+                <span class="hub-stat-val xp" id="arcadeHubXpTotal">0 XP</span>
+                <span class="hub-stat-lbl">Nivel: <strong id="arcadeHubLevelTitle">L1: Junior Explorer</strong></span>
+              </div>
+              <div class="hub-stat-item">
+                <div class="hub-goal-info">
+                  <span class="hub-goal-title">Meta Diaria</span>
+                  <span class="hub-goal-fraction" id="arcadeHubDailyGoalProgress">0 / 20 pts</span>
+                </div>
+                <div class="hub-goal-bar-wrap">
+                  <div class="hub-goal-bar-fill" id="arcadeHubDailyGoalBar" style="width: 0%;"></div>
+                </div>
+              </div>
+              <button class="arcade-sound-btn" id="arcadeSoundToggleBtn" title="Activar / Silenciar efectos arcade">
+                <span id="arcadeSoundToggleIcon">[AUDIO]</span> Sonido
+              </button>
+            </div>
+          </div>
+
+          <!-- Mistakes Loop Quick Banner -->
+          <div class="arcade-loop-banner">
+            <div class="loop-banner-text">
+              <strong>Loop de Repaso Inteligente (Spaced Repetition)</strong>
+              <p>Tienes <strong id="arcadeHubMistakesCount">0</strong> frases pendientes de consolidación.</p>
+            </div>
+            <button class="arcade-btn loop-btn" id="arcadeHubMistakesDrillBtn">Entrenar Errores Pendientes</button>
+          </div>
+
+          <!-- Missions Grid -->
+          <div class="arcade-missions-header">
+            <h3>Selecciona una Misión Profesional o Cotidiana</h3>
+            <span class="missions-count-tag">6 Misiones Disponibles</span>
+          </div>
+
+          <div class="arcade-missions-grid" id="arcadeMissionsGrid">
+            <!-- Dynamic mission cards injected via JS -->
+          </div>
+        </div>
+
+        <!-- VIEW B: Active Mission Playfield (Gameplay Arena) -->
+        <div class="arcade-play-view hidden" id="arcadePlayView">
+          <!-- Top Mission HUD Bar -->
+          <div class="arcade-hud-bar">
+            <div class="arcade-hud-left">
+              <button class="arcade-exit-hud-btn" id="arcadeExitMissionBtn" title="Salir al menú de misiones">← Salir</button>
+              <span class="arcade-hud-mission-title" id="arcadeHudMissionTitle">Misión en curso...</span>
+            </div>
+            
+            <div class="arcade-hud-center">
+              <div class="arcade-combo-badge combo-x1" id="arcadeHudComboBadge">
+                <span class="combo-flame">[COMBO]</span>
+                <span class="combo-text">COMBO x1</span>
+              </div>
+              <div class="arcade-hud-progress-wrap">
+                <span class="arcade-hud-counter" id="arcadeHudQuestionCounter">1 / 8</span>
+                <div class="arcade-hud-bar-track">
+                  <div class="arcade-hud-bar-fill" id="arcadeHudProgressBar" style="width: 10%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="arcade-hud-right">
+              <div class="arcade-score-pill">
+                <span class="score-label">Puntaje</span>
+                <strong id="arcadeHudScore">0</strong>
+              </div>
+              <span class="arcade-xp-pill" id="arcadeHudXP">+0 XP</span>
+            </div>
+          </div>
+
+          <!-- Competitive Ghost Rival & Speed Bonus Strip -->
+          <div class="arcade-competitive-strip">
+            <div class="arcade-rival-track-box">
+              <div class="rival-labels-row">
+                <span class="rival-tag-user" id="arcadeUserTrackLabel">TÚ: 0%</span>
+                <span class="rival-tag-ghost" id="arcadeRivalTrackLabel">RIVAL (ShadowDev): 0% [TE PERSIGUE]</span>
+              </div>
+              <div class="rival-dual-meter">
+                <div class="rival-meter-ghost" id="arcadeRivalMeter" style="width: 0%;"></div>
+                <div class="rival-meter-user" id="arcadeUserMeter" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="arcade-speed-timer-box">
+              <div class="speed-timer-label-row">
+                <span>TIEMPO BONUS (&lt;4s)</span>
+                <span class="speed-bonus-badge" id="arcadeSpeedBonusBadge">+50 PTS</span>
+              </div>
+              <div class="speed-timer-track">
+                <div class="speed-timer-fill" id="arcadeSpeedTimerFill" style="width: 100%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Playfield Stage -->
+          <div class="arcade-challenge-stage" id="arcadeChallengeStage">
+            <!-- Injected by arcade-engine.js -->
+          </div>
+
+          <!-- Feedback Toast / Box -->
+          <div class="arcade-feedback-box hidden" id="arcadeFeedbackBox">
+            <!-- Injected by arcade-engine.js -->
+          </div>
+        </div>
+
+        <!-- VIEW C: Results & Victory Screen -->
+        <div class="arcade-results-view hidden" id="arcadeResultsView">
+          <!-- Injected by arcade-engine.js -->
+        </div>
+      </section>
+
       <!-- 1. Flashcard Mode -->
       <section class="flashcard-container" id="flashcardMode">
-        <div class="method-strip" aria-label="Ruta de aprendizaje">
-          <div class="method-step active" data-step="core">
+        <div class="method-strip" id="methodStrip" aria-label="Nivel de vocabulario">
+          <button type="button" class="method-step active" data-step="core" title="Base: Primeras 1000 palabras más frecuentes (A1-A2)">
             <span class="method-kicker">Base</span>
             <strong>Primeras 1000</strong>
-          </div>
-          <div class="method-step" data-step="advanced">
+          </button>
+          <button type="button" class="method-step" data-step="advanced" title="Fluidez: Segundas 1000 palabras (Nivel B2)">
             <span class="method-kicker">Fluidez</span>
             <strong>Segundas 1000</strong>
-          </div>
-          <div class="method-step" data-step="technical">
+          </button>
+          <button type="button" class="method-step" data-step="technical" title="Profesional: IT, Ciberseguridad, Data & Finanzas">
             <span class="method-kicker">Profesional</span>
             <strong>IT + Cyber + Biz</strong>
-          </div>
-          <div class="method-step" data-step="slang">
+          </button>
+          <button type="button" class="method-step" data-step="slang" title="Oído Real: Slang callejero de USA y modismos">
             <span class="method-kicker">Oído real</span>
             <strong>Slang & Street USA</strong>
-          </div>
-          <div class="method-step" data-step="twisters">
+          </button>
+          <button type="button" class="method-step" data-step="twisters" title="Dicción: Trabalenguas, flow y ritmo">
             <span class="method-kicker">Dicción</span>
             <strong>Twisters & Ritmo</strong>
-          </div>
+          </button>
+          <button type="button" class="method-step" data-step="loop" id="methodLoopBtn" title="Loop de Errores: Palabras que has fallado 2+ veces">
+            <span class="method-kicker">Repaso</span>
+            <strong id="methodLoopLabel">Loop de Errores</strong>
+          </button>
         </div>
 
         <div class="flashcard-header">
@@ -210,10 +519,10 @@ import '../styles/global.css';
             </select>
 
             <select id="autoPlaySpeedSelect" class="timer-select" title="Velocidad de Auto-Play">
-              <option value="800">⚡ 0.8s (Rápido)</option>
-              <option value="500">🚀 0.5s (Ultra Flash)</option>
-              <option value="1500" selected>📖 1.5s (Normal)</option>
-              <option value="2500">🐢 2.5s (Pausado)</option>
+              <option value="800">0.8s (Rápido)</option>
+              <option value="500">0.5s (Ultra Flash)</option>
+              <option value="1500" selected>1.5s (Normal)</option>
+              <option value="2500">2.5s (Pausado)</option>
             </select>
 
             <select id="timerSelect" class="timer-select" aria-label="Temporizador de estudio">
@@ -225,7 +534,7 @@ import '../styles/global.css';
             </select>
             <span id="timerDisplay" class="timer-display">--:--</span>
             <button id="startTimerBtn" class="timer-btn">Iniciar</button>
-            <button class="quick-test-btn" id="autoPlayFlashcardsBtn" title="Reproduce automáticamente sin trabarse de forma continua">▶ Auto-Play</button>
+            <button class="quick-test-btn" id="autoPlayFlashcardsBtn" title="Reproduce automáticamente sin trabarse de forma continua">Auto-Play</button>
           </div>
         </div>
 
@@ -357,7 +666,7 @@ import '../styles/global.css';
 
         <!-- How it works guide -->
         <div class="rsvp-guide-card">
-          <div class="rsvp-guide-icon">🔗</div>
+          <div class="rsvp-guide-icon">[INFO]</div>
           <div class="rsvp-guide-content">
             <strong>¿Cómo funciona el Enlace Continuo (Connected Speech & RSVP)?</strong>
             <p>En inglés nativo, las palabras <strong>nunca se cortan en sílabas aisladas</strong>: se enlazan en bloques de pensamiento (<em>Thought Groups</em>) y ligaduras continuas (<em>Linking:</em> <code>turn‿off</code>, <code>worked‿here</code>). Lee en bloques vinculados de 2 o 3 palabras para captar la idea fluida y eliminar la traducción mental.</p>
@@ -403,7 +712,7 @@ import '../styles/global.css';
             <div class="rsvp-tokens-header">
               <span>Oración enlazada (haz clic en cualquier bloque o palabra para saltar / retroceder):</span>
               <button class="rsvp-mini-action-btn" id="rsvpAudioBtn" title="Escuchar pronunciación nativa enlazada">
-                🔊 Escuchar Flujo Completo
+                [AUDIO] Escuchar Flujo Completo
               </button>
             </div>
             <div class="rsvp-tokens-container" id="rsvpSentenceTokens">
@@ -417,22 +726,22 @@ import '../styles/global.css';
           <!-- Main Playback & Stepping Actions (Backwards + Forwards) -->
           <div class="rsvp-nav-row">
             <button class="action-btn rsvp-nav-btn secondary" id="rsvpPrevSentenceBtn" title="Oración anterior (Shift + ←)">
-              ⏮ Oración Anterior
+              &larr;&larr; Oración Anterior
             </button>
             <button class="action-btn rsvp-step-btn" id="rsvpPrevWordBtn" title="Retroceder bloque (←)">
-              ⏪ -1 Bloque
+              &larr; -1 Bloque
             </button>
             <button class="action-btn primary rsvp-play-btn" id="rsvpToggleBtn" title="Comenzar / Pausar (Espacio)">
-              ▶ Comenzar RSVP
+              Comenzar RSVP
             </button>
             <button class="action-btn rsvp-step-btn" id="rsvpNextWordBtn" title="Avanzar bloque (→)">
-              +1 Bloque ⏩
+              +1 Bloque &rarr;
             </button>
             <button class="action-btn rsvp-nav-btn secondary" id="rsvpNextSentenceBtn" title="Siguiente oración (Shift + →)">
-              Siguiente Oración ⏭
+              Siguiente Oración &rarr;&rarr;
             </button>
             <button class="action-btn icon-btn" id="rsvpRestartBtn" title="Reiniciar oración actual desde el inicio (R)">
-              🔄 Reiniciar
+              Reiniciar
             </button>
           </div>
 
@@ -448,21 +757,21 @@ import '../styles/global.css';
             </div>
 
             <div class="rsvp-setting-item">
-              <label for="rsvpChunkSelect"><strong>🔗 Modo Enlace:</strong></label>
+              <label for="rsvpChunkSelect"><strong>Modo Enlace:</strong></label>
               <select id="rsvpChunkSelect" class="timer-select" style="min-width: 190px;">
-                <option value="2" selected>🔗 2 Palabras (Thought Groups)</option>
-                <option value="3">🌊 3 Palabras (Flujo Continuo)</option>
-                <option value="1">🎯 1 Palabra (Foco Central)</option>
+                <option value="2" selected>2 Palabras (Thought Groups)</option>
+                <option value="3">3 Palabras (Flujo Continuo)</option>
+                <option value="1">1 Palabra (Foco Central)</option>
               </select>
             </div>
 
             <div class="rsvp-setting-item rsvp-presets-group">
               <span class="setting-label">Presets:</span>
               <div class="rsvp-presets-buttons">
-                <button type="button" class="rsvp-preset-btn" data-wpm="150" title="150 WPM - Paso lento / Principiante">🐢 150</button>
-                <button type="button" class="rsvp-preset-btn active" data-wpm="220" title="220 WPM - Aprendizaje cómodo">📖 220</button>
-                <button type="button" class="rsvp-preset-btn" data-wpm="320" title="320 WPM - Velocidad intermedia">⚡ 320</button>
-                <button type="button" class="rsvp-preset-btn" data-wpm="450" title="450 WPM - Lectura veloz avanzada">🚀 450</button>
+                <button type="button" class="rsvp-preset-btn" data-wpm="150" title="150 WPM - Paso lento / Principiante">150 WPM</button>
+                <button type="button" class="rsvp-preset-btn active" data-wpm="220" title="220 WPM - Aprendizaje cómodo">220 WPM</button>
+                <button type="button" class="rsvp-preset-btn" data-wpm="320" title="320 WPM - Velocidad intermedia">320 WPM</button>
+                <button type="button" class="rsvp-preset-btn" data-wpm="450" title="450 WPM - Lectura veloz avanzada">450 WPM</button>
               </div>
             </div>
 
@@ -863,6 +1172,8 @@ import '../styles/global.css';
         <!-- Word Tooltip -->
         <div class="word-tooltip hidden" id="wordTooltip"></div>
       </section>
+        </div> <!-- /cockpit-stage -->
+      </div> <!-- /cockpit-layout -->
     </main>
 
     <!-- Profile & Stats Drawer Panel -->

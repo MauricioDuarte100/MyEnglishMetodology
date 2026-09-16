@@ -7,9 +7,12 @@ import { getMnemonicForWord } from '../data/mnemonics.ts';
 import { PROFESSIONAL_SCENARIOS } from '../data/professional-scenarios.ts';
 import { PAST_PERFECT_LATIN_DATASET } from '../data/past-perfect-latin.ts';
 import { calculateNextReview, createSRSCard, SRS_LEVEL_LABELS, estimateCEFRLevel } from '../data/spaced-repetition.ts';
+import { showArcadeHub, renderArcadeHubOverview, loadArcadeUserData, renderTopHeroBanner } from './arcade-engine.js';
 
 // ===== Application State =====
 const state = {
+    currentTrack: 'basic',
+    trackStepIndex: 0,
     currentCategory: 'core',
     currentMode: 'flashcard',
     currentSet: 1,
@@ -26,6 +29,208 @@ const state = {
     isFlipped: false,
     subcategoryFilters: ['it', 'cybersecurity', 'dataAnalytics', 'business', 'finance']
 };
+
+// ===== Master Tracks Architecture (3 Specialized Learning Routes) =====
+const TRACKS_CONFIG = {
+    basic: {
+        id: 'basic',
+        name: 'Fundamentos & Core 1000',
+        badge: '[RUTA 1: BÁSICO]',
+        description: 'Asimila el 75% del inglés cotidiano paso a paso. Fonética visual, mnemotecnias y repaso sin prisa.',
+        category: 'core',
+        defaultMode: 'flashcard',
+        steps: [
+            { mode: 'flashcard', title: 'Tarjetas Base', subtitle: 'Input comprensible & mnemotecnia' },
+            { mode: 'quiz', title: 'Quiz de Consolidación', subtitle: 'Reconocimiento activo sin prisa' },
+            { mode: 'listening', title: 'Dictado Guiado', subtitle: 'Discriminación auditiva y ritmo' }
+        ],
+        modes: [
+            { id: 'flashcard', label: 'Tarjetas' },
+            { id: 'quiz', label: 'Quiz' },
+            { id: 'listening', label: 'Dictado' },
+            { id: 'grammar', label: 'Pasado & Perf.' }
+        ]
+    },
+    intensive: {
+        id: 'intensive',
+        name: 'Cyber Arena & Hardcore',
+        badge: '[RUTA 2: INTENSIVO]',
+        description: 'Alta presión y velocidad (<4s). Duelos contra ShadowDev, micro-desafíos IT/Cyber y código.',
+        category: 'technical',
+        defaultMode: 'arcade',
+        steps: [
+            { mode: 'arcade', title: 'Cyber Arena Duelo', subtitle: 'Partida contra ShadowDev (<4s)' },
+            { mode: 'typing', title: 'Producción de Código', subtitle: 'Escritura exacta en contexto' },
+            { mode: 'scenario', title: 'Simulador SOC / Incidentes', subtitle: 'Toma de decisiones técnicas' }
+        ],
+        modes: [
+            { id: 'arcade', label: 'Arena' },
+            { id: 'typing', label: 'Escribir' },
+            { id: 'scenario', label: 'Simulador' },
+            { id: 'fillblanks', label: 'Completar' }
+        ]
+    },
+    chill: {
+        id: 'chill',
+        name: 'Inmersión & Flow',
+        badge: '[RUTA 3: CHILL]',
+        description: 'Lectura continua sin estrés. Thought groups, modismos urbanos de USA, parejas y diálogos IA.',
+        category: 'slang',
+        defaultMode: 'rsvp',
+        steps: [
+            { mode: 'rsvp', title: 'Lectura RSVP Flow', subtitle: 'Enlace continuo sin traducción' },
+            { mode: 'matching', title: 'Parejas Relajadas', subtitle: 'Asociación ágil de términos' },
+            { mode: 'reading', title: 'Diálogos Situacionales IA', subtitle: 'Inmersión en contexto real' }
+        ],
+        modes: [
+            { id: 'rsvp', label: 'RSVP' },
+            { id: 'matching', label: 'Parejas' },
+            { id: 'reading', label: 'Lectura IA' }
+        ]
+    }
+};
+
+function renderTrackSidebar() {
+    const track = TRACKS_CONFIG[state.currentTrack] || TRACKS_CONFIG.basic;
+
+    const badgeEl = document.getElementById('sidebarTrackBadge');
+    const titleEl = document.getElementById('sidebarTrackTitle');
+    const descEl = document.getElementById('sidebarTrackDesc');
+    const fracEl = document.getElementById('pipelineProgressFraction');
+    const statusEl = document.getElementById('sidebarSessionStatus');
+    const streakEl = document.getElementById('sidebarStreakVal');
+    const xpEl = document.getElementById('sidebarXpVal');
+
+    if (badgeEl) badgeEl.textContent = track.badge;
+    if (titleEl) titleEl.textContent = track.name;
+    if (descEl) descEl.textContent = track.description;
+    if (fracEl) fracEl.textContent = `Paso ${state.trackStepIndex + 1} de ${track.steps.length}`;
+    if (statusEl) statusEl.textContent = track.steps[state.trackStepIndex]?.title || 'En curso';
+
+    try {
+        const arcadeData = JSON.parse(localStorage.getItem('arcade_user_data') || '{}');
+        if (streakEl) streakEl.textContent = `${arcadeData.streak || 0} Días`;
+        if (xpEl) xpEl.textContent = `${arcadeData.xp || 0} XP`;
+    } catch (err) {}
+
+    const stepsListEl = document.getElementById('pipelineStepsList');
+    if (stepsListEl) {
+        stepsListEl.innerHTML = '';
+        track.steps.forEach((step, idx) => {
+            const isCurrent = idx === state.trackStepIndex;
+            const isDone = idx < state.trackStepIndex;
+            const stepItem = document.createElement('div');
+            stepItem.className = `pipeline-step-item ${isCurrent ? 'active' : ''} ${isDone ? 'completed' : ''}`;
+            stepItem.dataset.stepIndex = idx;
+
+            const statusText = isCurrent ? '[EN CURSO]' : (isDone ? '[LISTO]' : '[PENDIENTE]');
+            stepItem.innerHTML = `
+                <span class="step-num-badge">${idx + 1}</span>
+                <div class="step-info-col">
+                    <span class="step-title">${step.title}</span>
+                    <span class="step-sub">${step.subtitle}</span>
+                </div>
+                <span class="step-status-tag">${statusText}</span>
+            `;
+
+            stepItem.addEventListener('click', () => {
+                setTrackStep(idx);
+            });
+
+            stepsListEl.appendChild(stepItem);
+        });
+    }
+
+    const chipsEl = document.getElementById('sidebarModesChips');
+    if (chipsEl) {
+        chipsEl.innerHTML = '';
+        track.modes.forEach(m => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = `sidebar-mode-chip ${state.currentMode === m.id ? 'active' : ''}`;
+            chip.textContent = m.label;
+            chip.addEventListener('click', () => {
+                switchToTrackMode(m.id);
+            });
+            chipsEl.appendChild(chip);
+        });
+    }
+
+    document.querySelectorAll('.track-card').forEach(card => {
+        const cardTrack = card.dataset.track;
+        const isActive = cardTrack === state.currentTrack;
+        card.classList.toggle('active', isActive);
+
+        const statusPill = card.querySelector('.track-card-status');
+        if (statusPill) {
+            statusPill.classList.toggle('hidden', !isActive);
+        }
+    });
+}
+
+function setTrack(trackId, stepIndex = 0) {
+    if (!TRACKS_CONFIG[trackId]) trackId = 'basic';
+    state.currentTrack = trackId;
+    state.trackStepIndex = stepIndex;
+
+    try {
+        localStorage.setItem('vocabCurrentTrack', trackId);
+    } catch (e) {}
+
+    const track = TRACKS_CONFIG[trackId];
+
+    if (state.currentCategory !== track.category) {
+        state.currentCategory = track.category;
+        state.currentSet = 1;
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.category === track.category);
+        });
+        loadWords();
+    }
+
+    const targetMode = track.steps[stepIndex]?.mode || track.defaultMode;
+    switchToTrackMode(targetMode, false);
+    renderTrackSidebar();
+}
+
+function setTrackStep(stepIndex) {
+    const track = TRACKS_CONFIG[state.currentTrack] || TRACKS_CONFIG.basic;
+    if (stepIndex < 0 || stepIndex >= track.steps.length) return;
+    state.trackStepIndex = stepIndex;
+    const targetMode = track.steps[stepIndex].mode;
+    switchToTrackMode(targetMode, false);
+    renderTrackSidebar();
+}
+
+function advanceTrackStep() {
+    const track = TRACKS_CONFIG[state.currentTrack] || TRACKS_CONFIG.basic;
+    let nextStep = state.trackStepIndex + 1;
+    if (nextStep >= track.steps.length) {
+        nextStep = 0;
+    }
+    setTrackStep(nextStep);
+}
+
+function switchToTrackMode(modeId, syncStep = true) {
+    state.currentMode = modeId;
+
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === modeId);
+    });
+
+    if (syncStep) {
+        const track = TRACKS_CONFIG[state.currentTrack];
+        if (track) {
+            const stepIdx = track.steps.findIndex(s => s.mode === modeId);
+            if (stepIdx !== -1) {
+                state.trackStepIndex = stepIdx;
+            }
+        }
+    }
+
+    resetMode();
+    updateDisplay();
+}
 
 const rsvpState = {
     source: 'vocab', // 'vocab' | 'grammar' | 'custom'
@@ -146,6 +351,9 @@ function loadSavedData() {
 
         const savedFailures = localStorage.getItem('vocabFailures');
         if (savedFailures) state.failures = JSON.parse(savedFailures);
+
+        const savedTrack = localStorage.getItem('vocabCurrentTrack');
+        if (savedTrack && TRACKS_CONFIG[savedTrack]) state.currentTrack = savedTrack;
     } catch (e) {
         console.error('Error loading saved data from localStorage:', e);
     }
@@ -668,10 +876,10 @@ function toggleAutoPlay() {
     if (autoPlayInterval) {
         clearInterval(autoPlayInterval);
         autoPlayInterval = null;
-        el.autoPlayFlashcardsBtn.textContent = '▶ Auto-Play';
+        el.autoPlayFlashcardsBtn.textContent = 'Auto-Play';
         el.autoPlayFlashcardsBtn.classList.remove('active');
     } else {
-        el.autoPlayFlashcardsBtn.textContent = '⏸ Detener';
+        el.autoPlayFlashcardsBtn.textContent = 'Detener';
         el.autoPlayFlashcardsBtn.classList.add('active');
 
         const speed = state.autoPlaySpeed || 1500;
@@ -708,6 +916,7 @@ function toggleAutoPlay() {
                 }
             }
         };
+        cycle();
         autoPlayInterval = setInterval(cycle, speed);
     }
 }
@@ -831,7 +1040,7 @@ function initRSVP(keepIndex = false) {
         if (grammarBox) grammarBox.classList.remove('hidden');
         if (tenseBadge && item) tenseBadge.textContent = formatTenseLabel(item.tenseType);
         if (grammarRule && item) {
-            const trapTxt = item.latinTrap ? ` • 💡 Ojo: ${item.latinTrap}` : '';
+            const trapTxt = item.latinTrap ? ` • [OJO] ${item.latinTrap}` : '';
             grammarRule.textContent = `${item.cognitiveRule}${trapTxt}`;
         }
         if (sentenceCounter) {
@@ -1103,10 +1312,10 @@ function startRSVP() {
     rsvpState.isPlaying = true;
 
     const toggleBtn = document.getElementById('rsvpToggleBtn');
-    if (toggleBtn) toggleBtn.textContent = '⏸ Pausar RSVP';
+    if (toggleBtn) toggleBtn.textContent = 'Pausar RSVP';
 
     const pbStatus = document.getElementById('rsvpPlaybackStatus');
-    if (pbStatus) pbStatus.textContent = `▶ Leyendo (${rsvpState.wpm} WPM - ${rsvpState.chunkMode}p/bloque)`;
+    if (pbStatus) pbStatus.textContent = `Leyendo (${rsvpState.wpm} WPM - ${rsvpState.chunkMode}p/bloque)`;
 
     // Calculate delay per chunk based on WPM and words in chunk
     const baseWordDelayMs = Math.max(70, Math.round(60000 / rsvpState.wpm));
@@ -1117,7 +1326,7 @@ function startRSVP() {
         if (rsvpState.chunkIndex >= rsvpState.chunks.length) {
             if (rsvpState.autoAdvance) {
                 const statusEl = document.getElementById('rsvpPlaybackStatus');
-                if (statusEl) statusEl.textContent = '⏳ Siguiente oración...';
+                if (statusEl) statusEl.textContent = 'Siguiente oración...';
                 rsvpState.intervalId = setTimeout(() => {
                     if (!rsvpState.isPlaying) return;
                     nextRSVPSentence(true);
@@ -1125,8 +1334,8 @@ function startRSVP() {
             } else {
                 stopRSVP();
                 const statusEl = document.getElementById('rsvpPlaybackStatus');
-                if (statusEl) statusEl.textContent = '✔ Oración completada';
-                if (toggleBtn) toggleBtn.textContent = '▶ Repetir Oración';
+                if (statusEl) statusEl.textContent = '[OK] Oración completada';
+                if (toggleBtn) toggleBtn.textContent = 'Repetir Oración';
             }
             return;
         }
@@ -1159,10 +1368,10 @@ function stopRSVP() {
         rsvpState.intervalId = null;
     }
     const toggleBtn = document.getElementById('rsvpToggleBtn');
-    if (toggleBtn) toggleBtn.textContent = '▶ Comenzar RSVP';
+    if (toggleBtn) toggleBtn.textContent = 'Comenzar RSVP';
 
     const pbStatus = document.getElementById('rsvpPlaybackStatus');
-    if (pbStatus && (pbStatus.textContent.startsWith('▶') || pbStatus.textContent.startsWith('⏳'))) {
+    if (pbStatus && (pbStatus.textContent.startsWith('Leyendo') || pbStatus.textContent.includes('Leyendo') || pbStatus.textContent.includes('Siguiente'))) {
         pbStatus.textContent = 'Pausado';
     }
 }
@@ -2033,6 +2242,32 @@ function updateProgress() {
     if (el.progressFill) el.progressFill.style.width = `${percent}%`;
 }
 
+function selectCategory(category) {
+    if (!category) return;
+    state.currentCategory = category;
+    state.currentSet = 1;
+
+    // Sync #categoryNav buttons
+    document.querySelectorAll('.category-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.category === category);
+    });
+
+    // Sync .method-step buttons
+    document.querySelectorAll('.method-step').forEach(b => {
+        b.classList.toggle('active', b.dataset.step === category);
+    });
+
+    // Toggle techSubnav if needed
+    const techSubnav = document.getElementById('techSubnav');
+    if (techSubnav) {
+        techSubnav.classList.toggle('hidden', category !== 'technical');
+    }
+
+    loadWords();
+    resetMode();
+    updateDisplay();
+}
+
 function updateMethodStrip() {
     const steps = document.querySelectorAll('.method-step');
     steps.forEach(step => {
@@ -2124,6 +2359,7 @@ function updateDisplay() {
     updateMethodStrip();
 
     // Mode containers visibility
+    el.arcadeMode?.classList.toggle('hidden', state.currentMode !== 'arcade');
     el.flashcardMode?.classList.toggle('hidden', state.currentMode !== 'flashcard');
     el.rsvpMode?.classList.toggle('hidden', state.currentMode !== 'rsvp');
     el.scenarioMode?.classList.toggle('hidden', state.currentMode !== 'scenario');
@@ -2141,6 +2377,9 @@ function updateDisplay() {
     }
 
     switch (state.currentMode) {
+        case 'arcade':
+            showArcadeHub();
+            break;
         case 'flashcard':
             updateFlashcard();
             break;
@@ -2172,6 +2411,48 @@ function updateDisplay() {
 
     updateProgress();
     updateLoopBadge();
+    renderTrackSidebar();
+
+    // De-saturate: Only show the Cyber Arena banner when in Intensive track or Arcade mode
+    const heroBanner = document.getElementById('cyberArenaHeroBanner');
+    if (heroBanner) {
+        const showBanner = state.currentTrack === 'intensive' || state.currentMode === 'arcade';
+        heroBanner.classList.toggle('hidden', !showBanner);
+    }
+
+    // Context-aware category buttons per track
+    document.querySelectorAll('.category-btn').forEach(btn => {
+        const cat = btn.dataset.category;
+        if (state.currentTrack === 'basic') {
+            const isRelevant = cat === 'core' || cat === 'advanced' || cat === 'loop';
+            btn.classList.toggle('hidden', !isRelevant);
+        } else if (state.currentTrack === 'intensive') {
+            const isRelevant = cat === 'technical' || cat === 'loop';
+            btn.classList.toggle('hidden', !isRelevant);
+        } else if (state.currentTrack === 'chill') {
+            const isRelevant = cat === 'slang' || cat === 'twisters' || cat === 'loop';
+            btn.classList.toggle('hidden', !isRelevant);
+        } else {
+            btn.classList.remove('hidden');
+        }
+    });
+
+    // Also filter .method-step inside Flashcard Mode
+    document.querySelectorAll('.method-step').forEach(btn => {
+        const step = btn.dataset.step;
+        if (state.currentTrack === 'basic') {
+            const isRelevant = step === 'core' || step === 'advanced' || step === 'loop';
+            btn.classList.toggle('hidden', !isRelevant);
+        } else if (state.currentTrack === 'intensive') {
+            const isRelevant = step === 'technical' || step === 'loop';
+            btn.classList.toggle('hidden', !isRelevant);
+        } else if (state.currentTrack === 'chill') {
+            const isRelevant = step === 'slang' || step === 'twisters' || step === 'loop';
+            btn.classList.toggle('hidden', !isRelevant);
+        } else {
+            btn.classList.remove('hidden');
+        }
+    });
 }
 
 // ===== DOM Element Initialization & Event Listeners =====
@@ -2183,6 +2464,9 @@ function init() {
         setSelect: document.getElementById('setSelect'),
         progressIndicator: document.getElementById('progressIndicator'),
         progressFill: document.getElementById('progressFill'),
+
+        // Arcade Element
+        arcadeMode: document.getElementById('arcadeMode'),
 
         // Flashcard Elements
         flashcardMode: document.getElementById('flashcardMode'),
@@ -2253,24 +2537,45 @@ function init() {
 
     loadSavedData();
     loadWords();
+    renderTopHeroBanner();
     setupEventListeners();
+    renderTrackSidebar();
     updateDisplay();
 }
 
 function setupEventListeners() {
-    // Category Navigation
+    // Master Track Hub Cards (3 Rutas)
+    document.getElementById('trackHub')?.addEventListener('click', (e) => {
+        const card = e.target.closest('.track-card');
+        if (!card) return;
+        const trackId = card.dataset.track;
+        if (trackId) {
+            setTrack(trackId, 0);
+        }
+    });
+
+    // Track Continue Button (Siguiente Paso Guiado)
+    document.getElementById('trackContinueBtn')?.addEventListener('click', () => {
+        advanceTrackStep();
+    });
+
+    // Cyber Arena Hero Banner CTA
+    document.getElementById('heroBannerLaunchBtn')?.addEventListener('click', () => {
+        setTrack('intensive', 0);
+    });
+
+    // Category Navigation (Top Stage Nav)
     el.categoryNav?.addEventListener('click', (e) => {
         const btn = e.target.closest('.category-btn');
         if (!btn) return;
+        selectCategory(btn.dataset.category);
+    });
 
-        document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        state.currentCategory = btn.dataset.category;
-        state.currentSet = 1;
-        loadWords();
-        resetMode();
-        updateDisplay();
+    // Method Strip Level Selector (Inside Flashcard Mode)
+    document.getElementById('methodStrip')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.method-step');
+        if (!btn) return;
+        selectCategory(btn.dataset.step);
     });
 
     // Technical Subcategory Checkboxes
@@ -2299,6 +2604,16 @@ function setupEventListeners() {
         btn.classList.add('active');
 
         state.currentMode = btn.dataset.mode;
+        
+        // Sync track step if mode matches step in current track
+        const track = TRACKS_CONFIG[state.currentTrack];
+        if (track) {
+            const stepIdx = track.steps.findIndex(s => s.mode === state.currentMode);
+            if (stepIdx !== -1) {
+                state.trackStepIndex = stepIdx;
+            }
+        }
+
         resetMode();
         updateDisplay();
     });
@@ -2690,6 +3005,11 @@ function setupEventListeners() {
             renderProfile();
             alert('Progreso restablecido correctamente.');
         }
+    });
+
+    // Arcade Mission Exit Trigger
+    document.getElementById('arcadeExitMissionBtn')?.addEventListener('click', () => {
+        showArcadeHub();
     });
 
     // Global Keyboard Shortcuts
