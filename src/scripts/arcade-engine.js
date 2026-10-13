@@ -1,4 +1,6 @@
 import { ARCADE_DATASET, ARCADE_MISSIONS } from '../data/julebu-arcade-dataset.ts';
+import { speechPlayer, automaticAudioEnabled } from './speech-player.js';
+import { localDay, recordTrainingAction, getArenaLevel } from './training-progress.js';
 import { playSuccessSound, playErrorSound, playClickSound, playStreakSound, playVictorySound, playSpeedBonusSound, toggleSoundMute, isSoundMuted } from './sound-fx.js';
 
 // =========================================================
@@ -62,7 +64,7 @@ export const arcadeState = {
     level: 1,
     levelTitle: '[CADETE CYBER]',
     divisionName: 'División I',
-    percentileRank: 'Top 65%',
+    percentileRank: 'Progresión personal',
     dailyStreak: 0,
     bestStreak: 0,
     lastPlayDate: null,
@@ -144,11 +146,7 @@ function isFlexibleMatch(userInput, targetEnglish) {
 }
 
 function calculateLevel(xp) {
-    if (xp < 500) return { level: 1, title: '[CADETE CYBER]', division: 'División I', percentile: 'Top 65%', nextXp: 500, prevXp: 0 };
-    if (xp < 1500) return { level: 2, title: '[ESPECIALISTA TECH]', division: 'División II', percentile: 'Top 35%', nextXp: 1500, prevXp: 500 };
-    if (xp < 3500) return { level: 3, title: '[TIFFANY ELITE]', division: 'División III', percentile: 'Top 12%', nextXp: 3500, prevXp: 1500 };
-    if (xp < 7000) return { level: 4, title: '[MAESTRO DE CODIGO]', division: 'División IV', percentile: 'Top 3.4%', nextXp: 7000, prevXp: 3500 };
-    return { level: 5, title: '[POLYGLOT CYBER GOD]', division: 'División V (Challenger)', percentile: 'Top 0.5%', nextXp: 15000, prevXp: 7000 };
+    return getArenaLevel(xp);
 }
 
 function shuffle(arr) {
@@ -169,7 +167,7 @@ export function loadArcadeUserData() {
         arcadeState.xp = parseInt(localStorage.getItem(STORAGE_KEYS.XP)) || 0;
         
         const streakData = JSON.parse(localStorage.getItem(STORAGE_KEYS.STREAK) || '{}');
-        const today = new Date().toISOString().split('T')[0];
+        const today = localDay();
         
         if (streakData.lastPlayDate) {
             const lastDate = new Date(streakData.lastPlayDate);
@@ -220,7 +218,7 @@ export function saveArcadeUserData() {
     try {
         localStorage.setItem(STORAGE_KEYS.XP, arcadeState.xp.toString());
 
-        const today = new Date().toISOString().split('T')[0];
+        const today = localDay();
         const streakData = {
             currentStreak: arcadeState.dailyStreak,
             bestStreak: Math.max(arcadeState.bestStreak, arcadeState.dailyStreak),
@@ -245,7 +243,7 @@ export function saveArcadeUserData() {
 }
 
 export function recordStreakActivity() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDay();
     if (arcadeState.lastPlayDate !== today) {
         arcadeState.dailyStreak += 1;
         arcadeState.lastPlayDate = today;
@@ -260,22 +258,9 @@ export function recordStreakActivity() {
 // TTS SPEECH HELPER
 // =========================================================
 
-export function speakArcadeSentence(text, rate = 0.9) {
-    if (!text) return;
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-US';
-        utterance.rate = rate;
-        utterance.pitch = 1.0;
-
-        // Try to select high quality English voice if available
-        const voices = window.speechSynthesis.getVoices();
-        const usVoice = voices.find(v => (v.lang === 'en-US' || v.lang === 'en_US') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Jenny') || v.name.includes('Aria')));
-        if (usVoice) utterance.voice = usVoice;
-
-        window.speechSynthesis.speak(utterance);
-    }
+export function speakArcadeSentence(text, rate = .9, automatic = false) {
+    if (automatic && !automaticAudioEnabled()) return Promise.resolve('skipped');
+    return speechPlayer.play(text, { rate });
 }
 
 // =========================================================
@@ -492,6 +477,7 @@ export function initArcadeKeyboardShortcuts() {
 // =========================================================
 
 function applyCorrectAnswer() {
+    recordTrainingAction('arcade-answer', true, `arcade:${arcadeState.currentChallenge?.id}`);
     // Check speed bonus before stopping timer
     const isSpeedBonus = arcadeState.speedTimerRemaining >= 6;
     stopSpeedBonusTimer();
@@ -571,6 +557,7 @@ function applyCorrectAnswer() {
 }
 
 function applyIncorrectAnswer() {
+    recordTrainingAction('arcade-answer', false, `arcade:${arcadeState.currentChallenge?.id}`);
     stopSpeedBonusTimer();
 
     // Soft punishment: decrease multiplier by 1 rather than resetting to zero completely!
@@ -742,7 +729,7 @@ function renderChallengePlayfield() {
 
     // Automatically speak sentence in listening / speech modes
     if (mode === 'listen_type' || mode === 'listen_select' || mode === 'speech') {
-        speakArcadeSentence(c.english, 0.88);
+        speakArcadeSentence(c.english, 0.88, true);
     }
 
     switch (mode) {
@@ -1206,7 +1193,7 @@ function evaluateSubmission(userText, targetOverride = null) {
 
     if (isCorrect) {
         applyCorrectAnswer();
-        speakArcadeSentence(c.english, 0.95);
+        speakArcadeSentence(c.english, 0.95, true);
         showFeedback(true, `¡Excelente! Dominio perfecto.`);
     } else {
         applyIncorrectAnswer();
@@ -1252,6 +1239,8 @@ function showFeedback(isSuccess, message) {
 // =========================================================
 
 function showMissionResults() {
+    speechPlayer.stop();
+    recordTrainingAction('arcade', undefined, arcadeState.currentMission?.id);
     stopGhostRivalRace();
     stopSpeedBonusTimer();
     playVictorySound();
@@ -1336,6 +1325,7 @@ function showMissionResults() {
 }
 
 export function showArcadeHub() {
+    speechPlayer.stop();
     arcadeState.active = false;
     stopGhostRivalRace();
     stopSpeedBonusTimer();

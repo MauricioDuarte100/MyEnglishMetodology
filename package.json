@@ -6,6 +6,8 @@
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro build",
+    "check:routes": "node scripts/check-routes.mjs",
+    "test": "node --test scripts/*.test.mjs",
     "preview": "astro preview",
     "astro": "astro"
   },

@@ -1,0 +1,10 @@
+---
+import { learningTracks } from '../data/navigation.js';
+---
+<div class="path-grid">
+  {learningTracks.map(track => <a class="path-card" href={`/practica/${track.slug}`}>
+    <span class="eyebrow">{track.tag}</span>
+    <h3>{track.title}</h3><p>{track.description}</p>
+    <div class="path-card-bottom"><span>{track.exercises.length} ejercicios · {track.duration}</span><span class="card-arrow" aria-hidden="true">↗</span></div>
+  </a>)}
+</div>

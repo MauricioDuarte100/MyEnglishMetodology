@@ -42,10 +42,33 @@ Generador de diálogos situacionales en inglés americano real con pronunciació
 
 ## 🧭 Páginas de Apoyo
 
-- **📚 Metodología (`/methodology`)**: Principios cognitivos, pirámide de aprendizaje, niveles CEFR y plan semanal de estudio.
-- **🗣️ Pronunciación (`/pronunciation`)**: Tabla fonética interactiva con audio, pares mínimos y reglas de habla conectada (*linking*, *flapping T*, *reductions*).
-- **🔗 Recursos (`/resources`)**: Curaduría de canales de YouTube, podcasts, series y lecturas recomendadas por nivel.
-- **🤖 IA Coach (`/ai-coach`)**: Prompts optimizados para configurar ChatGPT / Claude / Gemini como entrenadores personales.
+### Navegación de la aplicación
+
+La portada (`/`) presenta los recorridos y permite retomar el último ejercicio. La práctica se organiza en subrutas reales:
+
+- `/practica/fundamentos`: tarjetas, quiz, dictado y gramática.
+- `/practica/profesional`: arena, escritura, simulador y completar oraciones.
+- `/practica/inmersion`: lectura fluida, parejas y diálogos con IA.
+- Cada ejercicio tiene su propia URL, por ejemplo `/practica/fundamentos/tarjetas`. Admite acceso directo, recarga y navegación con Atrás/Adelante. `?category=loop` abre el repaso de errores.
+- `/biblioteca`: metodología, pronunciación, recursos y coach de IA.
+- `/progreso`: resumen del progreso y actividad guardados en el navegador.
+
+Las sesiones guiadas recorren los tres pasos sugeridos del recorrido seleccionado. Las páginas comparten `SiteLayout` y `SiteHeader`; el catálogo de recorridos y ejercicios se define en `src/data/navigation.js`. Los datos anteriores de `localStorage` se conservan y las cuatro URLs originales de apoyo redirigen a sus nuevas ubicaciones.
+
+El inicio es un panel de entrenamiento intensivo: sprints de tres fases que pueden pausarse y retomarse, bloques de práctica sugeridos, precisión basada en respuestas verificadas, combos, nivel personal de Arena y una meta diaria de 20 aciertos en expresiones diferentes. `?guided=1` inicia o retoma el sprint; `?category=review` muestra únicamente tarjetas cuyo repaso SRS venció. ShadowDev es un rival simulado y los niveles son progreso personal.
+
+Cada sprint utiliza un bloque de hasta diez palabras; las fases reutilizan el mismo vocabulario para pasar de reconocimiento a producción. El bloque y la fase se conservan al pausar o recargar. Las autoevaluaciones de tarjetas no inflan la precisión y repetir una palabra correcta no duplica la meta diaria.
+
+La pronunciación usa un único canal de audio compartido. Cada nueva petición cancela la anterior; detener, cambiar de ejercicio o salir de la página también invalida las respuestas tardías. El audio de refuerzo y el avance rápido requieren activar sus controles. Si la voz neural tarda más de 4,5 segundos, se usa la voz del navegador. La caché de audio tiene límites tanto en el cliente como en el servidor.
+
+`npm test` cubre solicitudes fuera de orden, cancelación, respuestas tardías, fallback, liberación de caché y normalización del dictado. La verificación de rutas también comprueba la validación de parámetros de pronunciación.
+
+Con el servidor de desarrollo activo, `npm run check:routes` comprueba las páginas, los enlaces internos, las redirecciones y las respuestas 404. `CHECK_ORIGIN` permite usar otro origen.
+
+- **📚 Metodología (`/biblioteca/metodologia`)**: Principios cognitivos, pirámide de aprendizaje, niveles CEFR y plan semanal de estudio.
+- **🗣️ Pronunciación (`/biblioteca/pronunciacion`)**: Tabla fonética interactiva con audio, pares mínimos y reglas de habla conectada (*linking*, *flapping T*, *reductions*).
+- **🔗 Recursos (`/biblioteca/recursos`)**: Curaduría de canales de YouTube, podcasts, series y lecturas recomendadas por nivel.
+- **🤖 IA Coach (`/biblioteca/coach-ia`)**: Prompts optimizados para configurar ChatGPT / Claude / Gemini como entrenadores personales.
 
 ---
 

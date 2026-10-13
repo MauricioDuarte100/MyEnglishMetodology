@@ -1,0 +1,30 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+<SiteLayout title="Mi progreso">
+  <div class="page-intro"><span class="eyebrow">CADA PASO CUENTA</span><h1>Tu progreso, a la vista.</h1><p>Un resumen de lo que has practicado. Tus datos se guardan en este navegador.</p></div>
+  <div class="stats-grid"><div><strong id="masteredCount">0</strong><span>Palabras dominadas</span></div><div><strong id="learningCount">0</strong><span>En aprendizaje</span></div><div><strong id="reviewCount">0</strong><span>Por reforzar</span></div><div><strong id="studyTime">0 min</strong><span>Tiempo registrado</span></div></div>
+  <div class="quiet-callout"><div><h2>Convierte los errores en práctica.</h2><p>Vuelve a las palabras que te costaron y afianza tu vocabulario.</p></div><a class="primary-link" href="/practica/fundamentos/tarjetas?category=loop">Repasar errores →</a></div>
+  <section class="section-block"><div class="section-heading"><h2>Actividad reciente</h2><a class="text-link" href="/practica">Seguir practicando →</a></div><ul id="activityList" class="activity-list"><li>Todavía no hay sesiones registradas. Empieza un ejercicio o una sesión guiada para sumar actividad.</li></ul></section>
+  <script>
+    const read = (key: string, fallback: any) => { try { return JSON.parse(localStorage.getItem(key) || 'null') || fallback; } catch { return fallback; } };
+    const progress = read('vocabProgress', {});
+    const failures = read('vocabFailures', {});
+    const profile = read('vocabProfile', {});
+    const setText = (id: string, value: string | number) => { const element = document.getElementById(id); if (element) element.textContent = String(value); };
+    setText('masteredCount', Object.values(progress).filter(v => v === 'mastered').length);
+    setText('learningCount', Object.values(progress).filter(v => v === 'learning').length);
+    setText('reviewCount', Object.values(failures).filter(v => Number(v) >= 2).length);
+    setText('studyTime', `${Math.floor((profile.totalTimerSeconds || 0) / 60)} min`);
+    const list = document.getElementById('activityList');
+    const categories: Record<string, string> = {core: 'Core 1000', advanced: 'Advanced 1000', technical: 'Inglés profesional', slang: 'Urban Slang', twisters: 'Trabalenguas', loop: 'Repaso de errores'};
+    if (list && Array.isArray(profile.setHistory) && profile.setHistory.length) {
+      list.replaceChildren(...profile.setHistory.slice(0, 10).map((activity: any) => {
+        const li = document.createElement('li');
+        const title = document.createElement('strong'); title.textContent = `${activity.type || 'Práctica'} · ${categories[activity.category] || 'Vocabulario'}`;
+        const detail = document.createElement('span'); detail.textContent = `${activity.date || ''} · ${Math.ceil((activity.durationSeconds || 0) / 60)} min`;
+        li.append(title, detail); return li;
+      }));
+    }
+  </script>
+</SiteLayout>

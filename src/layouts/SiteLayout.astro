@@ -1,0 +1,27 @@
+---
+import '../styles/global.css';
+import '../styles/organized.css';
+import SiteHeader from '../components/SiteHeader.astro';
+const { title, description = 'Aprende inglés con una práctica clara, a tu ritmo.', section } = Astro.props;
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title} | VOCAB</title>
+  </head>
+  <body class="organized-ui">
+    <a href="#contenido" class="skip-link">Saltar al contenido</a>
+    <div class="site-shell">
+      <SiteHeader />
+      {section === 'biblioteca' && <nav class="library-nav" aria-label="Secciones de biblioteca">
+        <a href="/biblioteca">Toda la biblioteca</a>
+        {['metodologia', 'pronunciacion', 'recursos', 'coach-ia'].map((slug, i) => <a href={`/biblioteca/${slug}`} aria-current={Astro.url.pathname.replace(/\/$/, '') === `/biblioteca/${slug}` ? 'page' : undefined}>{['Metodología', 'Pronunciación', 'Recursos', 'Coach de IA'][i]}</a>)}
+      </nav>}
+      <main id="contenido" class="site-content" tabindex="-1"><slot /></main>
+      <footer class="site-footer"><span>VOCAB · Tu espacio para aprender inglés</span><a href="/biblioteca/metodologia">Cómo aprovechar tu práctica →</a></footer>
+    </div>
+  </body>
+</html>

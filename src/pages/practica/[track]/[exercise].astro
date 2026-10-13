@@ -1,0 +1,15 @@
+---
+import SiteLayout from '../../../layouts/SiteLayout.astro';
+import PracticeWorkspace from '../../../components/PracticeWorkspace.astro';
+import { learningTracks, exerciseHref } from '../../../data/navigation.js';
+export const prerender = true;
+export function getStaticPaths() { return learningTracks.flatMap(track => track.exercises.map(exercise => ({ params: { track: track.slug, exercise: exercise.slug }, props: { track, exercise } }))); }
+const { track, exercise } = Astro.props;
+---
+<SiteLayout title={`${exercise.title} · ${track.title}`}>
+  <nav class="breadcrumbs" aria-label="Ubicación"><a href="/practica">Práctica</a><span aria-hidden="true">/</span><a href={`/practica/${track.slug}`}>{track.title}</a><span aria-hidden="true">/</span><span id="exerciseBreadcrumb" aria-current="page">{exercise.title}</span></nav>
+  <div class="practice-layout">
+    <aside class="practice-sidebar"><a class="back-to-track" href={`/practica/${track.slug}`}>← {track.title}</a><span class="eyebrow">EJERCICIOS DEL RECORRIDO</span><nav aria-label="Ejercicios">{track.exercises.map((item, i) => <a href={exerciseHref(track, item)} data-exercise-link data-mode={item.mode} aria-current={item.slug === exercise.slug ? 'page' : undefined}><span>0{i + 1}</span>{item.title}</a>)}</nav><div class="sidebar-note"><strong>Una cosa a la vez.</strong><p>Practica este ejercicio y pasa al siguiente cuando te sientas listo.</p></div><a class="text-link" href="/practica">Cambiar de recorrido →</a></aside>
+    <section class="practice-main" aria-labelledby="exerciseTitle"><div class="exercise-intro"><span class="eyebrow">{track.title}</span><h1 id="exerciseTitle">{exercise.title}</h1><p id="exerciseDescription">{exercise.description}</p></div><PracticeWorkspace track={track} exercise={exercise} /></section>
+  </div>
+</SiteLayout>

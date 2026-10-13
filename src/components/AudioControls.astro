@@ -1,0 +1,38 @@
+---
+const { rapid = false } = Astro.props;
+---
+<div class="audio-control-bar" aria-label="Controles de pronunciación">
+  <span class="audio-status" id="audioStatus" role="status" aria-live="polite">Audio manual · pulsa Escuchar</span>
+  <div class="audio-options">
+    <label title="Lee las correcciones y los modelos de voz automáticamente."><input type="checkbox" id="automaticAudio" /> Autoaudio</label>
+    {rapid && <label title="Avanza después de corregir una respuesta en Quiz y Escribir."><input type="checkbox" id="rapidAdvance" /> Avance rápido</label>}
+    <button class="secondary-button" id="stopAllAudio" disabled>Detener voz</button>
+  </div>
+</div>
+<script>
+  import { speechPlayer, automaticAudioEnabled } from '../scripts/speech-player.js';
+  const automatic = document.getElementById('automaticAudio') as HTMLInputElement | null;
+  if (automatic) {
+    automatic.checked = automaticAudioEnabled();
+    automatic.addEventListener('change', () => {
+      speechPlayer.stop();
+      try { localStorage.setItem('vocabAutoAudio', String(automatic.checked)); } catch {}
+    });
+  }
+  const rapid = document.getElementById('rapidAdvance') as HTMLInputElement | null;
+  if (rapid) {
+    try { rapid.checked = localStorage.getItem('vocabRapidAdvance') === 'true'; } catch {}
+    rapid.addEventListener('change', () => { try { localStorage.setItem('vocabRapidAdvance', String(rapid.checked)); } catch {} });
+  }
+  const stop = document.getElementById('stopAllAudio') as HTMLButtonElement | null;
+  stop?.addEventListener('click', () => {
+    speechPlayer.stop();
+    document.dispatchEvent(new CustomEvent('vocab:stop-audio'));
+  });
+  document.addEventListener('vocab:audio', (event: Event) => {
+    const { status, source } = (event as CustomEvent).detail;
+    const label = document.getElementById('audioStatus');
+    if (label) label.textContent = status === 'loading' ? 'Preparando pronunciación…' : status === 'playing' ? `Reproduciendo · ${source === 'browser' ? 'voz del navegador' : 'voz neural'}` : status === 'error' ? 'Audio no disponible. Pulsa Escuchar para reintentar.' : 'Audio manual · pulsa Escuchar';
+    if (stop) stop.disabled = status !== 'loading' && status !== 'playing';
+  });
+</script>

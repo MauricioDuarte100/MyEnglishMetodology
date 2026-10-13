@@ -1,4 +1,7 @@
 import { CORE_1000 } from '../data/core-1000.js';
+import { learningTracks, exerciseHref } from '../data/navigation.js';
+import { speechPlayer, automaticAudioEnabled } from './speech-player.js';
+import { readStored, getTrainingProgress, recordTrainingAction, normalizeAnswer, phaseTargets, escapeHtml } from './training-progress.js';
 import { ADVANCED_1000 } from '../data/advanced-1000.js';
 import { TECHNICAL_VOCABULARY } from '../data/technical.js';
 import { URBAN_SLANG } from '../data/urban-slang.js';
@@ -7,7 +10,58 @@ import { getMnemonicForWord } from '../data/mnemonics.ts';
 import { PROFESSIONAL_SCENARIOS } from '../data/professional-scenarios.ts';
 import { PAST_PERFECT_LATIN_DATASET } from '../data/past-perfect-latin.ts';
 import { calculateNextReview, createSRSCard, SRS_LEVEL_LABELS, estimateCEFRLevel } from '../data/spaced-repetition.ts';
-import { showArcadeHub, renderArcadeHubOverview, loadArcadeUserData, renderTopHeroBanner } from './arcade-engine.js';
+import { arcadeState, showArcadeHub, renderArcadeHubOverview, loadArcadeUserData, renderTopHeroBanner, stopSpeedBonusTimer, stopGhostRivalRace } from './arcade-engine.js';
+
+function applyPracticeRoute() {
+    const workspace = document.getElementById('practiceWorkspace');
+    if (!workspace) return;
+    const parts = window.location.pathname.replace(/\/$/, '').split('/');
+    const track = learningTracks.find(t => t.slug === parts[2]);
+    const exercise = track?.exercises.find(e => e.slug === parts[3]);
+    if (!track || !exercise) return;
+    state.currentTrack = track.id;
+    state.currentMode = exercise.mode;
+    state.trackStepIndex = Math.max(0, TRACKS_CONFIG[track.id].steps.findIndex(s => s.mode === exercise.mode));
+    const requestedCategory = new URLSearchParams(window.location.search).get('category');
+    const allowed = { basic: ['core', 'advanced', 'loop', 'review'], intensive: ['technical', 'loop', 'review'], chill: ['slang', 'twisters', 'loop', 'review'] };
+    state.currentCategory = allowed[track.id].includes(requestedCategory) ? requestedCategory : track.category;
+    state.currentSet = 1;
+    const categorySelect = document.getElementById('practiceCategory');
+    if (categorySelect) categorySelect.value = state.currentCategory;
+}
+
+function syncPracticeRoute() {
+    if (!document.getElementById('practiceWorkspace')) return;
+    const track = learningTracks.find(t => t.id === state.currentTrack);
+    const exercise = track?.exercises.find(e => e.mode === state.currentMode);
+    if (!track || !exercise) return;
+    const url = new URL(window.location.href);
+    url.pathname = exerciseHref(track, exercise);
+    if (sessionState.active) url.searchParams.set('guided', '1');
+    else url.searchParams.delete('guided');
+    if (state.currentCategory === track.category) url.searchParams.delete('category');
+    else url.searchParams.set('category', state.currentCategory);
+    if (url.pathname + url.search !== window.location.pathname + window.location.search) {
+        history.pushState({}, '', url.pathname + url.search);
+    }
+    document.title = `${exercise.title} · ${track.title} | VOCAB`;
+    for (const [id, text] of [['exerciseTitle', exercise.title], ['exerciseDescription', exercise.description], ['exerciseBreadcrumb', exercise.title]]) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = text;
+    }
+    document.querySelectorAll('[data-exercise-link]').forEach(link => {
+        if (link.dataset.mode === exercise.mode) link.setAttribute('aria-current', 'page');
+        else link.removeAttribute('aria-current');
+        const target = new URL(link.href);
+        if (state.currentCategory === track.category) target.searchParams.delete('category');
+        else target.searchParams.set('category', state.currentCategory);
+        link.href = target.pathname + target.search;
+    });
+    try {
+        localStorage.setItem('vocabLastPractice', JSON.stringify({ track: track.id, mode: exercise.mode, category: state.currentCategory }));
+        localStorage.setItem('vocabCurrentTrack', track.id);
+    } catch {}
+}
 
 // ===== Application State =====
 const state = {
@@ -288,6 +342,7 @@ const listeningState = {
 
 const sessionState = {
     active: false,
+    completedActions: [0, 0, 0],
     currentPhase: 0,
     phases: ['flashcard', 'rsvp', 'grammar', 'scenario', 'quiz', 'typing', 'fillblanks', 'matching', 'listening', 'reading'],
     phaseLabels: ['Tarjetas', 'RSVP', 'Pasado/Perf.', 'Simulador', 'Quiz', 'Escribir', 'Completar', 'Parejas', 'Dictado', 'Lectura IA'],
@@ -340,17 +395,10 @@ function shuffleArray(array) {
 // ===== LocalStorage Persistence =====
 function loadSavedData() {
     try {
-        const savedProgress = localStorage.getItem('vocabProgress');
-        if (savedProgress) state.progress = JSON.parse(savedProgress);
-
-        const savedSRS = localStorage.getItem('vocabSRS');
-        if (savedSRS) state.srsData = JSON.parse(savedSRS);
-
-        const savedAssoc = localStorage.getItem('vocabAssociations');
-        if (savedAssoc) state.associations = JSON.parse(savedAssoc);
-
-        const savedFailures = localStorage.getItem('vocabFailures');
-        if (savedFailures) state.failures = JSON.parse(savedFailures);
+        state.progress = readStored('vocabProgress');
+        state.srsData = readStored('vocabSRS');
+        state.associations = readStored('vocabAssociations');
+        state.failures = readStored('vocabFailures');
 
         const savedTrack = localStorage.getItem('vocabCurrentTrack');
         if (savedTrack && TRACKS_CONFIG[savedTrack]) state.currentTrack = savedTrack;
@@ -414,7 +462,10 @@ function clearFailure(wordObj) {
     }
 }
 
+let catalogCache = null;
+let catalogIndex = null;
 function getAllCatalogWords() {
+    if (catalogCache) return catalogCache;
     const list = [
         ...CORE_1000.map(w => normalizeWord(w, 'core')),
         ...ADVANCED_1000.map(w => normalizeWord(w, 'advanced')),
@@ -428,14 +479,16 @@ function getAllCatalogWords() {
         });
     });
 
-    return list;
+    catalogCache = list;
+    return catalogCache;
 }
 
 function getLoopWords() {
+    if (!Object.values(state.failures).some(count => count >= 2)) return [];
     const loopWords = [];
     const allCatalog = getAllCatalogWords();
-    const catalogMap = new Map();
-    allCatalog.forEach(w => catalogMap.set(getWordKey(w), w));
+    if (!catalogIndex) catalogIndex = new Map(allCatalog.map(word => [getWordKey(word), word]));
+    const catalogMap = catalogIndex;
 
     for (const [key, count] of Object.entries(state.failures)) {
         if (count >= 2) {
@@ -480,156 +533,52 @@ function updateLoopBadge() {
     if (profileLoopCount) profileLoopCount.textContent = count;
 }
 
-// ===== Ultra-Realistic Neural Speech Audio Engine =====
-let currentAudioInstance = null;
-const ttsAudioCache = new Map();
+// ===== Shared pronunciation and explicit playback controls =====
+let dialogueGeneration = 0;
+let dialogueTimer = null;
+let advanceTimer = null;
+let modeGeneration = 0;
 
 function stopAudio() {
-    if (currentAudioInstance) {
-        currentAudioInstance.pause();
-        currentAudioInstance.currentTime = 0;
-        currentAudioInstance = null;
-    }
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-    }
+    dialogueGeneration++;
+    clearTimeout(dialogueTimer);
+    dialogueTimer = null;
+    readingState.isPlayingAudio = false;
+    document.querySelectorAll('.reading-segment').forEach(segment => segment.classList.remove('playing'));
+    speechPlayer.stop();
 }
 
-function speakText(text, rateOrOptions = 1.0, onEndCallback = null) {
-    if (!text) return;
+function speakText(text, rateOrOptions = 1, onEndCallback = null) {
+    const options = typeof rateOrOptions === 'number' ? { rate: rateOrOptions } : { ...rateOrOptions };
+    if (options.automatic && !automaticAudioEnabled()) return Promise.resolve('skipped');
+    if (onEndCallback) options.onEnd = onEndCallback;
+    return speechPlayer.play(text, options);
+}
 
-    let rate = 1.0;
-    let voice = 'en-US-JennyNeural'; // Natural, authentic American English female voice
-    let callback = onEndCallback;
-
-    if (typeof rateOrOptions === 'number') {
-        rate = rateOrOptions;
-    } else if (typeof rateOrOptions === 'object' && rateOrOptions !== null) {
-        if (rateOrOptions.rate) rate = rateOrOptions.rate;
-        if (rateOrOptions.voice) voice = rateOrOptions.voice;
-        if (rateOrOptions.onEnd) callback = rateOrOptions.onEnd;
-    } else if (typeof rateOrOptions === 'function') {
-        callback = rateOrOptions;
-    }
-
-    const cleanText = text.replace(/[*_#`[\]"]/g, '').trim();
-    if (!cleanText) return;
-
-    stopAudio();
-
-    // Format rate string (e.g. 0.85 -> "-15%", 1.0 -> "+0%")
-    let rateStr = '+0%';
-    if (rate !== 1.0) {
-        const pct = Math.round((rate - 1.0) * 100);
-        rateStr = (pct >= 0 ? '+' : '') + `${pct}%`;
-    }
-
-    const cacheKey = `${voice}_${rateStr}_${cleanText}`;
-
-    // 1. Instant Playback from In-Memory Cache
-    if (ttsAudioCache.has(cacheKey)) {
-        playAudioUrl(ttsAudioCache.get(cacheKey), callback, cleanText, rate);
-        return;
-    }
-
-    // 2. Fetch High-Definition Neural Speech from /api/tts
-    fetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: cleanText, voice, rate: rateStr })
-    })
-    .then(res => {
-        if (!res.ok) throw new Error(`Neural TTS HTTP ${res.status}`);
-        return res.blob();
-    })
-    .then(blob => {
-        const audioUrl = URL.createObjectURL(blob);
-        ttsAudioCache.set(cacheKey, audioUrl);
-        playAudioUrl(audioUrl, callback, cleanText, rate);
-    })
-    .catch(err => {
-        console.warn('Neural TTS fallback:', err);
-        fallbackToBrowserTTS(cleanText, rate, callback);
+function scheduleAdvance(button, mode, playback = Promise.resolve('skipped')) {
+    clearTimeout(advanceTimer);
+    const generation = modeGeneration;
+    const index = state.currentIndex;
+    playback.then(result => {
+        if (result === 'cancelled' || generation !== modeGeneration || state.currentMode !== mode || index !== state.currentIndex) return;
+        if (!document.getElementById('rapidAdvance')?.checked) return;
+        advanceTimer = setTimeout(() => {
+            if (generation === modeGeneration && state.currentMode === mode && index === state.currentIndex && document.getElementById('rapidAdvance')?.checked) button?.click();
+        }, result === 'ended' ? 500 : 1400);
     });
-}
-
-function playAudioUrl(url, callback, fallbackText, fallbackRate) {
-    try {
-        const audio = new Audio(url);
-        currentAudioInstance = audio;
-
-        audio.onended = () => {
-            currentAudioInstance = null;
-            if (callback) callback();
-        };
-
-        audio.onerror = () => {
-            currentAudioInstance = null;
-            fallbackToBrowserTTS(fallbackText, fallbackRate, callback);
-        };
-
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(e => {
-                console.warn('Audio playback error, fallback:', e);
-                fallbackToBrowserTTS(fallbackText, fallbackRate, callback);
-            });
-        }
-    } catch (e) {
-        fallbackToBrowserTTS(fallbackText, fallbackRate, callback);
-    }
-}
-
-function fallbackToBrowserTTS(text, rate, onEndCallback) {
-    if (!('speechSynthesis' in window)) {
-        if (onEndCallback) onEndCallback();
-        return;
-    }
-
-    window.speechSynthesis.cancel();
-    let voices = window.speechSynthesis.getVoices();
-    if (voices.length === 0) {
-        window.speechSynthesis.onvoiceschanged = () => {
-            voices = window.speechSynthesis.getVoices();
-            executeBrowserSpeak(text, voices, rate, onEndCallback);
-        };
-        return;
-    }
-    executeBrowserSpeak(text, voices, rate, onEndCallback);
-}
-
-function executeBrowserSpeak(text, voices, rate, onEndCallback) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
-    utterance.rate = rate;
-
-    // Prioritize natural neural browser voices
-    let voice = voices.find(v => (v.lang === 'en-US' || v.lang.startsWith('en_US')) &&
-        (v.name.includes('Natural') || v.name.includes('Online') || v.name.includes('Neural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Ava') || v.name.includes('Jenny') || v.name.includes('Guy')));
-
-    if (!voice) voice = voices.find(v => v.lang.toLowerCase().includes('en-us') && !v.name.includes('Desktop'));
-    if (!voice) voice = voices.find(v => v.lang.toLowerCase().includes('en-us'));
-    if (!voice) voice = voices.find(v => v.lang.toLowerCase().startsWith('en'));
-
-    if (voice) utterance.voice = voice;
-
-    if (onEndCallback) {
-        utterance.onend = onEndCallback;
-        utterance.onerror = onEndCallback;
-    }
-
-    window.speechSynthesis.speak(utterance);
 }
 
 // ===== Word Loading & Filtering =====
 function loadWords() {
+    stopAudio();
+    clearTimeout(advanceTimer);
     let allWords = [];
 
     if (state.currentCategory === 'loop') {
         allWords = getLoopWords();
-        if (allWords.length === 0) {
-            allWords = CORE_1000.slice(0, 10).map(w => normalizeWord(w, 'core'));
-        }
+    } else if (state.currentCategory === 'review') {
+        allWords = getAllCatalogWords().filter(word => state.srsData[getWordKey(word)]?.nextReview <= Date.now());
+        allWords.sort((a, b) => state.srsData[getWordKey(a)].nextReview - state.srsData[getWordKey(b)].nextReview);
     } else {
         switch (state.currentCategory) {
             case 'core':
@@ -669,7 +618,7 @@ function loadWords() {
         state.currentWords = allWords.slice(start, end);
     }
 
-    if (state.currentCategory !== 'loop') {
+    if (state.currentCategory !== 'loop' && state.currentCategory !== 'review') {
         const loopWords = getLoopWords();
         const existingKeys = new Set(state.currentWords.map(w => getWordKey(w)));
         const toInject = loopWords.filter(w => !existingKeys.has(getWordKey(w))).slice(0, 3);
@@ -694,7 +643,7 @@ function updateSetSelector(totalItems) {
         option.value = i;
         const start = (i - 1) * state.itemsPerSet + 1;
         const end = Math.min(i * state.itemsPerSet, totalItems);
-        option.textContent = `Set ${i} (${start}-${end})`;
+        option.textContent = totalItems === 0 ? 'Sin palabras pendientes' : `Grupo ${i} (${start}-${end})`;
         if (i === state.currentSet) option.selected = true;
         setSelect.appendChild(option);
     }
@@ -776,29 +725,15 @@ function updateFlashcard() {
     // Flip state
     if (el.flashcard) el.flashcard.classList.toggle('flipped', state.isFlipped);
     if (el.prevBtn) el.prevBtn.disabled = state.currentIndex === 0;
-    if (el.nextBtn) el.nextBtn.disabled = state.currentIndex === state.currentWords.length - 1;
+    if (el.nextBtn) el.nextBtn.disabled = false;
 }
 
 function markWord(status) {
     const word = state.currentWords[state.currentIndex];
     if (!word) return;
 
-    const key = getWordKey(word);
-    state.progress[key] = status;
-
-    const currentSRS = state.srsData[key] || createSRSCard(word.word, word.category || state.currentCategory);
-
-    if (status === 'mastered') {
-        state.srsData[key] = calculateNextReview(currentSRS, true);
-        clearFailure(word);
-    } else {
-        state.srsData[key] = calculateNextReview(currentSRS, false);
-        recordFailure(word);
-    }
-
-    saveProgress();
-    saveSRS();
-    updateProgress();
+    markWordExplicit(status, word);
+    recordTrainingAction('flashcard', undefined, getWordKey(word));
 
     const btn = status === 'mastered' ? el.knowBtn : el.learningBtn;
     if (btn) {
@@ -811,7 +746,7 @@ function markWord(status) {
         state.isFlipped = false;
         updateDisplay();
     } else {
-        updateDisplay();
+        el.nextBtn?.click();
     }
 }
 
@@ -844,7 +779,8 @@ function toggleFlashcardTimer() {
         if (flashcardTimeRemaining <= 0) {
             stopFlashcardTimer();
             alert('Tiempo cumplido. Pasemos a evaluar lo aprendido con el Quiz.');
-            document.querySelector('.mode-btn[data-mode="quiz"]')?.click();
+            if (sessionState.active) advanceSession();
+            else switchToTrackMode('quiz');
         }
     }, 1000);
 }
@@ -1324,6 +1260,7 @@ function startRSVP() {
         if (!rsvpState.isPlaying) return;
 
         if (rsvpState.chunkIndex >= rsvpState.chunks.length) {
+            recordTrainingAction('rsvp', undefined, rsvpState.currentSentence);
             if (rsvpState.autoAdvance) {
                 const statusEl = document.getElementById('rsvpPlaybackStatus');
                 if (statusEl) statusEl.textContent = 'Siguiente oración...';
@@ -1505,10 +1442,12 @@ function handleScenarioChoice(step, choiceIdx) {
         feedbackBox.classList.remove('hidden');
     }
 
-    speakText(choice.englishDraft);
+    recordTrainingAction('scenario-answer', choice.isOptimal, `${scenarioState.scenarioIndex}:${scenarioState.stepIndex}`);
+    speakText(choice.englishDraft, { automatic: true });
 }
 
 function renderScenarioCompleted(scenario) {
+    recordTrainingAction('scenario', undefined, String(scenarioState.scenarioIndex));
     const terminal = document.querySelector('.scenario-dialogue-terminal');
     const choicesList = document.getElementById('scenarioChoicesList');
     const feedbackBox = document.getElementById('scenarioFeedbackBox');
@@ -1577,20 +1516,20 @@ function generateQuizOptions(correctWord) {
 function handleQuizAnswer(index) {
     const optionButtons = el.quizOptions.querySelectorAll('.quiz-option');
     const selected = optionButtons[index];
-    if (!selected) return;
+    if (!selected || selected.disabled || !el.quizFeedback.classList.contains('hidden')) return;
 
     const isCorrect = selected.dataset.correct === 'true';
     state.quizTotal++;
 
     const word = state.currentWords[state.currentIndex];
+    recordTrainingAction('quiz', isCorrect, getWordKey(word));
 
     if (isCorrect) {
         state.quizScore++;
         selected.classList.add('correct');
         el.quizFeedback.querySelector('.feedback-text').textContent = 'Correcto. Excelente retención.';
         el.quizFeedback.querySelector('.feedback-text').className = 'feedback-text correct';
-        markWord('mastered');
-        speakText(word.word);
+        markWordExplicit('mastered', word);
     } else {
         selected.classList.add('incorrect');
         optionButtons.forEach(btn => {
@@ -1608,11 +1547,7 @@ function handleQuizAnswer(index) {
     if (el.totalQuestions) el.totalQuestions.textContent = state.quizTotal;
 
     if (isCorrect) {
-        setTimeout(() => {
-            if (!el.quizFeedback.classList.contains('hidden')) {
-                el.nextQuestionBtn?.click();
-            }
-        }, 1600);
+        scheduleAdvance(el.nextQuestionBtn, 'quiz', speakText(word.word, { automatic: true }));
     }
 }
 
@@ -1641,23 +1576,18 @@ function escapeRegExp(string) {
 
 function checkTypingAnswer() {
     const word = state.currentWords[state.currentIndex];
-    if (!word || !el.typingInput) return;
+    if (!word || !el.typingInput || el.typingFeedback.querySelector('.feedback-text').classList.contains('correct') && !el.typingFeedback.classList.contains('hidden')) return;
 
     const userAnswer = el.typingInput.value.trim().toLowerCase();
     const correct = word.word.trim().toLowerCase();
     const feedbackText = el.typingFeedback.querySelector('.feedback-text');
+    recordTrainingAction('typing', userAnswer === correct, getWordKey(word));
 
     if (userAnswer === correct) {
         feedbackText.textContent = `Correcto. "${word.word}" es exacto.`;
         feedbackText.className = 'feedback-text correct';
-        markWord('mastered');
-        speakText(word.example);
-
-        setTimeout(() => {
-            if (!el.typingFeedback.classList.contains('hidden')) {
-                el.nextWordBtn?.click();
-            }
-        }, 2200);
+        markWordExplicit('mastered', word);
+        scheduleAdvance(el.nextWordBtn, 'typing', speakText(word.example, { automatic: true }));
     } else {
         feedbackText.textContent = `Intenta de nuevo o presiona "Dar una Pista".`;
         feedbackText.className = 'feedback-text incorrect';
@@ -1681,7 +1611,7 @@ function initFillBlanks() {
     let html = '';
     selected.forEach((wordObj, index) => {
         const sentence = wordObj.example;
-        const parts = sentence.split(new RegExp(`(${escapeRegExp(wordObj.word)})`, 'gi'));
+        const parts = sentence.split(new RegExp(`(\\b${escapeRegExp(wordObj.word)}\\b)`, 'gi'));
         let blankedSentence = '';
 
         parts.forEach(part => {
@@ -1725,18 +1655,21 @@ function checkFillBlanks() {
         const index = parseInt(select.dataset.index);
         const answer = select.value;
         const correct = fillBlanksCorrectAnswers[index];
+        const freshAnswer = select.dataset.checkedAnswer !== answer;
+        select.dataset.checkedAnswer = answer;
+        if (freshAnswer) recordTrainingAction('fillblanks', answer === correct, `${state.currentCategory}:${correct}`);
 
         if (answer === correct) {
             select.classList.remove('incorrect');
             select.classList.add('correct');
             score++;
             const wordObj = state.currentWords.find(w => w.word.toLowerCase() === correct);
-            if (wordObj) markWordExplicit('mastered', wordObj);
+            if (wordObj && freshAnswer) markWordExplicit('mastered', wordObj);
         } else {
             select.classList.add('incorrect');
             select.classList.remove('correct');
             const wordObj = state.currentWords.find(w => w.word.toLowerCase() === correct);
-            if (wordObj) recordFailure(wordObj);
+            if (wordObj && freshAnswer) recordFailure(wordObj);
         }
     });
 
@@ -1754,6 +1687,12 @@ function checkFillBlanks() {
 function markWordExplicit(status, wordObj) {
     const key = getWordKey(wordObj);
     state.progress[key] = status;
+    if (status === 'mastered') {
+        const card = state.srsData[key] || createSRSCard(wordObj.word, wordObj.category || state.currentCategory);
+        state.srsData[key] = calculateNextReview(card, true);
+        clearFailure(wordObj);
+        saveSRS();
+    } else recordFailure(wordObj);
     saveProgress();
     updateProgress();
 }
@@ -1831,7 +1770,8 @@ function handleMatchingClick(index) {
                 matchingState.cards[c2.index].state = 'matched';
                 matchingState.matchedPairs++;
 
-                speakText(c1.type === 'word' ? c1.content : c2.content);
+                recordTrainingAction('matching', true, `${state.currentCategory}:${c1.rawWord}`);
+                speakText(c1.type === 'word' ? c1.content : c2.content, { automatic: true });
                 matchingState.selectedCards = [];
                 renderMatchingGrid();
 
@@ -1843,6 +1783,7 @@ function handleMatchingClick(index) {
                     if (feedback) feedback.classList.remove('hidden');
                 }
             } else {
+                recordTrainingAction('matching', false, `${state.currentCategory}:${c1.rawWord}`);
                 matchingState.cards[c1.index].state = 'mismatch';
                 matchingState.cards[c2.index].state = 'mismatch';
                 renderMatchingGrid();
@@ -1852,7 +1793,9 @@ function handleMatchingClick(index) {
                     if (wordObj) recordFailure(wordObj);
                 });
 
+                const generation = modeGeneration;
                 setTimeout(() => {
+                    if (generation !== modeGeneration || state.currentMode !== 'matching') return;
                     matchingState.cards[c1.index].state = 'face-down';
                     matchingState.cards[c2.index].state = 'face-down';
                     matchingState.selectedCards = [];
@@ -1871,6 +1814,7 @@ function initListening() {
 }
 
 function pickDictationWord() {
+    stopAudio();
     if (state.currentWords.length === 0) return;
     const idx = Math.floor(Math.random() * state.currentWords.length);
     listeningState.currentWord = state.currentWords[idx];
@@ -1909,10 +1853,8 @@ function checkDictation() {
     listeningState.total++;
     listeningState.revealed = true;
 
-    const isMatch = userAnswer === cleanWord ||
-                    userAnswer === cleanExample ||
-                    userAnswer === cleanWord.replace(/[^a-z0-9]/gi, '') ||
-                    cleanExample.includes(userAnswer && userAnswer.length > 3 ? userAnswer : '$$$');
+    const isMatch = normalizeAnswer(userAnswer) === normalizeAnswer(cleanExample || cleanWord);
+    recordTrainingAction('listening', isMatch, getWordKey(word));
 
     if (isMatch) {
         listeningState.correct++;
@@ -2008,19 +1950,19 @@ function displayReadingText(result) {
     const textContainer = document.getElementById('readingTextContainer');
     if (!textContent || !textContainer) return;
 
-    let html = `<h2 class="reading-title">${result.title || 'Diálogo de Práctica'}</h2>`;
+    let html = `<h2 class="reading-title">${escapeHtml(result.title || 'Diálogo de Práctica')}</h2>`;
 
     if (result.segments && Array.isArray(result.segments)) {
         result.segments.forEach((seg, idx) => {
             html += `
             <div class="reading-segment" data-segment-index="${idx}">
                 <div class="segment-header">
-                    ${seg.speaker ? `<strong class="reading-speaker">${seg.speaker}</strong>` : '<span></span>'}
-                    <button type="button" class="segment-audio-btn" data-text="${(seg.english || seg.text).replace(/"/g, '&quot;')}" title="Escuchar esta frase">Audio</button>
+                    ${seg.speaker ? `<strong class="reading-speaker">${escapeHtml(seg.speaker)}</strong>` : '<span></span>'}
+                    <button type="button" class="segment-audio-btn" data-text="${escapeHtml(seg.english || seg.text)}" title="Escuchar esta frase">Audio</button>
                 </div>
                 <p class="reading-original">${highlightDifficultWords(seg.english || seg.text, result.difficultWords)}</p>
-                ${seg.phonetic ? `<p class="reading-phonetic">[Fonética]: ${seg.phonetic}</p>` : ''}
-                ${seg.spanish ? `<p class="reading-spanish">${seg.spanish}</p>` : ''}
+                ${seg.phonetic ? `<p class="reading-phonetic">[Fonética]: ${escapeHtml(seg.phonetic)}</p>` : ''}
+                ${seg.spanish ? `<p class="reading-spanish">${escapeHtml(seg.spanish)}</p>` : ''}
             </div>
             `;
         });
@@ -2042,18 +1984,15 @@ function displayReadingText(result) {
     });
 }
 
-function playFullDialogue() {
+async function playFullDialogue() {
     if (!readingState.currentText || !readingState.currentText.segments) return;
-
+    stopAudio();
+    const generation = dialogueGeneration;
+    readingState.isPlayingAudio = true;
     const segments = readingState.currentText.segments;
-    let currentIdx = 0;
-
-    function playNext() {
-        if (currentIdx >= segments.length) {
-            document.querySelectorAll('.reading-segment').forEach(s => s.classList.remove('playing'));
-            return;
-        }
-
+    let completed = true;
+    for (let currentIdx = 0; currentIdx < segments.length; currentIdx++) {
+        if (generation !== dialogueGeneration || state.currentMode !== 'reading') { completed = false; break; }
         const seg = segments[currentIdx];
         const text = seg.english || seg.text;
         const isMale = (seg.speaker && /alex|john|david|michael|tom|mark|daniel|james|robert|interviewer|boss|engineer/i.test(seg.speaker)) || (currentIdx % 2 === 1);
@@ -2063,20 +2002,22 @@ function playFullDialogue() {
             s.classList.toggle('playing', idx === currentIdx);
         });
 
-        currentIdx++;
-        speakText(text, { voice: segmentVoice, rate: 1.0 }, () => {
-            setTimeout(playNext, 450);
-        });
+        const result = await speakText(text, { voice: segmentVoice, rate: 1.0 });
+        if (result !== 'ended') { completed = false; break; }
     }
-
-    playNext();
+    if (generation === dialogueGeneration) {
+        readingState.isPlayingAudio = false;
+        document.querySelectorAll('.reading-segment').forEach(s => s.classList.remove('playing'));
+        if (completed) recordTrainingAction('reading', undefined, 'dialogue');
+    }
 }
 
 function highlightDifficultWords(text, difficultWords) {
-    if (!text || !difficultWords || difficultWords.length === 0) return text || '';
+    if (!text || !Array.isArray(difficultWords) || difficultWords.length === 0) return escapeHtml(text);
 
-    let highlighted = text;
+    let highlighted = escapeHtml(text);
     difficultWords.forEach((wordObj, index) => {
+        if (!wordObj.word) return;
         const regex = new RegExp(`\\b(${escapeRegExp(wordObj.word)})\\b`, 'gi');
         highlighted = highlighted.replace(regex, `<span class="difficult-word" data-word-index="${index}">$1</span>`);
     });
@@ -2088,9 +2029,9 @@ function showWordTooltip(targetEl, wordData) {
     if (!tooltip) return;
 
     tooltip.innerHTML = `
-        <div class="tooltip-word">${wordData.word}</div>
-        <div class="tooltip-definition">${wordData.definition}</div>
-        ${wordData.example ? `<div class="tooltip-example">"${wordData.example}"</div>` : ''}
+        <div class="tooltip-word">${escapeHtml(wordData.word)}</div>
+        <div class="tooltip-definition">${escapeHtml(wordData.definition)}</div>
+        ${wordData.example ? `<div class="tooltip-example">"${escapeHtml(wordData.example)}"</div>` : ''}
     `;
 
     const rect = targetEl.getBoundingClientRect();
@@ -2133,14 +2074,32 @@ function hideReadingError() {
 
 // ===== Guided Session Stepper =====
 function startSession() {
+    if (sessionState.active) return;
+    const track = TRACKS_CONFIG[state.currentTrack];
+    const saved = readStored('vocabGuidedSession');
+    const resuming = saved.track === state.currentTrack && saved.category === state.currentCategory && Number.isInteger(saved.phase) && saved.phase >= 0 && saved.phase < track.steps.length;
+    if (resuming && Array.isArray(saved.wordKeys)) {
+        const catalog = new Map(getAllCatalogWords().map(word => [getWordKey(word), word]));
+        const restored = saved.wordKeys.map(key => catalog.get(key)).filter(Boolean).slice(0, 10);
+        if (restored.length) state.currentWords = restored;
+    }
+    if (!state.currentWords.length) return;
+    state.currentWords = state.currentWords.slice(0, 10);
+    state.currentIndex = 0;
+    sessionState.phases = track.steps.map(step => step.mode);
+    sessionState.phaseLabels = track.steps.map(step => step.title);
     sessionState.active = true;
-    sessionState.currentPhase = 0;
+    sessionState.currentPhase = resuming ? saved.phase : 0;
+    sessionState.completedActions = resuming && Array.isArray(saved.counts) ? saved.counts.map(n => Math.max(0, Number(n) || 0)) : [0, 0, 0];
     sessionState.startTime = Date.now();
+    const categorySelect = document.getElementById('practiceCategory');
+    if (categorySelect) categorySelect.disabled = true;
 
     document.getElementById('categoryNav')?.classList.add('hidden');
     document.getElementById('modeNav')?.classList.add('hidden');
     document.getElementById('setContainer')?.classList.add('hidden');
     document.getElementById('sessionOverlay')?.classList.remove('hidden');
+    document.getElementById('sessionSummary')?.classList.add('hidden');
 
     if (sessionState.timerInterval) clearInterval(sessionState.timerInterval);
     sessionState.timerInterval = setInterval(() => {
@@ -2152,16 +2111,18 @@ function startSession() {
     }, 1000);
 
     renderSessionStepper();
-    goToSessionPhase(0);
+    goToSessionPhase(sessionState.currentPhase);
 }
 
 function goToSessionPhase(phaseIndex) {
     sessionState.currentPhase = phaseIndex;
+    state.currentIndex = 0;
     const mode = sessionState.phases[phaseIndex];
     state.currentMode = mode;
 
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
     renderSessionStepper();
+    persistGuidedSession();
     resetMode();
     updateDisplay();
 }
@@ -2175,21 +2136,39 @@ function advanceSession() {
 }
 
 function endSession(completed = false) {
+    if (!sessionState.active) return;
     if (sessionState.timerInterval) clearInterval(sessionState.timerInterval);
     const elapsed = sessionState.startTime ? Math.floor((Date.now() - sessionState.startTime) / 1000) : 0;
 
     recordStudyTime(elapsed, completed);
+    if (completed) { try { localStorage.removeItem('vocabGuidedSession'); } catch {} }
+    else persistGuidedSession();
     sessionState.active = false;
     sessionState.startTime = null;
+    const categorySelect = document.getElementById('practiceCategory');
+    if (categorySelect) categorySelect.disabled = false;
+    const startSessionBtn = document.getElementById('startSessionBtn');
+    if (startSessionBtn) startSessionBtn.disabled = state.currentWords.length === 0;
 
     document.getElementById('categoryNav')?.classList.remove('hidden');
     document.getElementById('modeNav')?.classList.remove('hidden');
     document.getElementById('setContainer')?.classList.remove('hidden');
     document.getElementById('sessionOverlay')?.classList.add('hidden');
 
-    if (completed) {
-        alert(`Sesión completada con éxito en ${Math.floor(elapsed / 60)}m ${elapsed % 60}s. Has ejercitado todas las habilidades.`);
+    stopAudio();
+    loadWords();
+    resetMode();
+    updateDisplay();
+    const summary = document.getElementById('sessionSummary');
+    if (summary) {
+        summary.textContent = completed ? `Sprint finalizado · ${Math.floor(elapsed / 60)} min ${elapsed % 60} s. Revisa tu precisión en Mi progreso y refuerza los errores.` : 'Sprint pausado. Puedes retomar esta fase desde el panel de inicio.';
+        summary.classList.remove('hidden');
     }
+}
+
+function persistGuidedSession() {
+    if (!sessionState.active) return;
+    try { localStorage.setItem('vocabGuidedSession', JSON.stringify({ track: state.currentTrack, category: state.currentCategory, phase: sessionState.currentPhase, counts: sessionState.completedActions, wordKeys: state.currentWords.map(getWordKey) })); } catch {}
 }
 
 function renderSessionStepper() {
@@ -2202,6 +2181,13 @@ function renderSessionStepper() {
         if (i === sessionState.currentPhase) cls += ' active';
         return `<div class="${cls}"><span class="phase-number">${i + 1}</span><span class="phase-label">${label}</span></div>`;
     }).join('');
+    const mode = sessionState.phases[sessionState.currentPhase];
+    const target = phaseTargets[mode] || 1;
+    const count = sessionState.completedActions[sessionState.currentPhase] || 0;
+    const targetEl = document.getElementById('sessionTarget');
+    if (targetEl) targetEl.textContent = `Fase ${sessionState.currentPhase + 1} de ${sessionState.phases.length} · Bloque sugerido: ${count}/${target} ${mode === 'flashcard' ? 'tarjetas repasadas' : mode === 'arcade' ? 'misiones terminadas' : 'acciones de práctica'}. Prioriza precisión antes de velocidad.`;
+    const next = document.getElementById('nextPhaseBtn');
+    if (next) next.textContent = sessionState.currentPhase === sessionState.phases.length - 1 ? 'Completar sprint →' : count >= target ? 'Bloque listo · Siguiente fase →' : 'Siguiente fase →';
 }
 
 // ===== Progress & Profile System =====
@@ -2246,6 +2232,8 @@ function selectCategory(category) {
     if (!category) return;
     state.currentCategory = category;
     state.currentSet = 1;
+    const categorySelect = document.getElementById('practiceCategory');
+    if (categorySelect) categorySelect.value = category;
 
     // Sync #categoryNav buttons
     document.querySelectorAll('.category-btn').forEach(b => {
@@ -2342,11 +2330,18 @@ function renderProfile() {
 
 // ===== Reset & Switch Modes =====
 function resetMode() {
+    modeGeneration++;
+    clearTimeout(advanceTimer);
     state.isFlipped = false;
     state.quizScore = 0;
     state.quizTotal = 0;
     stopAudio();
     stopRSVP();
+    stopSpeedBonusTimer();
+    stopGhostRivalRace();
+    arcadeState.active = false;
+    arcadeState.speechRecognitionInstance?.stop();
+    stopFlashcardTimer();
 
     if (autoPlayInterval) toggleAutoPlay();
     if (el.flashcard) el.flashcard.classList.remove('flipped');
@@ -2356,7 +2351,23 @@ function resetMode() {
 }
 
 function updateDisplay() {
+    syncPracticeRoute();
     updateMethodStrip();
+    const emptyReview = ['loop', 'review'].includes(state.currentCategory) && state.currentWords.length === 0;
+    const emptyTitle = document.getElementById('emptyReviewTitle');
+    if (emptyTitle) emptyTitle.textContent = state.currentCategory === 'review' ? 'No tienes repasos vencidos.' : 'No tienes errores pendientes.';
+    const emptyDescription = document.getElementById('emptyReviewDescription');
+    if (emptyDescription) emptyDescription.textContent = state.currentCategory === 'review' ? 'Tus tarjetas volverán cuando toque repasarlas según la repetición espaciada.' : 'Las palabras que falles más de una vez aparecerán aquí para repasarlas.';
+    document.getElementById('setContainer')?.classList.toggle('hidden', emptyReview || sessionState.active);
+    document.getElementById('emptyReview')?.classList.toggle('hidden', !emptyReview);
+    document.querySelector('.exercise-stage')?.classList.toggle('hidden', emptyReview);
+    const startSessionBtn = document.getElementById('startSessionBtn');
+    if (startSessionBtn) startSessionBtn.disabled = emptyReview || sessionState.active;
+    if (emptyReview) {
+        updateProgress();
+        updateLoopBadge();
+        return;
+    }
 
     // Mode containers visibility
     el.arcadeMode?.classList.toggle('hidden', state.currentMode !== 'arcade');
@@ -2457,6 +2468,7 @@ function updateDisplay() {
 
 // ===== DOM Element Initialization & Event Listeners =====
 function init() {
+    const guidedRequested = new URLSearchParams(location.search).get('guided') === '1';
     el = {
         categoryNav: document.getElementById('categoryNav'),
         modeNav: document.getElementById('modeNav'),
@@ -2536,14 +2548,66 @@ function init() {
     };
 
     loadSavedData();
+    applyPracticeRoute();
     loadWords();
     renderTopHeroBanner();
     setupEventListeners();
     renderTrackSidebar();
-    updateDisplay();
+    if (guidedRequested) startSession();
+    if (!sessionState.active) updateDisplay();
 }
 
 function setupEventListeners() {
+    document.addEventListener('vocab:stop-audio', stopAudio);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) return;
+        modeGeneration++;
+        clearTimeout(advanceTimer);
+        stopAudio();
+        stopRSVP();
+        if (autoPlayInterval) toggleAutoPlay();
+    });
+    document.addEventListener('vocab:training', event => {
+        if (!sessionState.active || event.detail.mode !== state.currentMode) return;
+        const phase = sessionState.currentPhase;
+        sessionState.completedActions[phase] = (sessionState.completedActions[phase] || 0) + 1;
+        persistGuidedSession();
+        renderSessionStepper();
+    });
+    document.addEventListener('click', event => {
+        const button = event.target.closest('button');
+        if (button && ['prevBtn', 'nextBtn', 'nextQuestionBtn', 'nextWordBtn', 'dictNextBtn', 'grammarPrevBtn', 'grammarNextBtn', 'rsvpPrevSentenceBtn', 'rsvpNextSentenceBtn', 'generateBlanksBtn', 'nextLevelBtn', 'arcadeFeedbackNextBtn', 'arcadeExitMissionBtn'].includes(button.id)) {
+            modeGeneration++;
+            clearTimeout(advanceTimer);
+            stopAudio();
+        }
+    }, true);
+    document.getElementById('returnToVocabulary')?.addEventListener('click', () => {
+        selectCategory(learningTracks.find(t => t.id === state.currentTrack).category);
+    });
+    document.getElementById('practiceCategory')?.addEventListener('change', (event) => {
+        selectCategory(event.target.value);
+    });
+    document.querySelectorAll('[data-exercise-link]').forEach(link => {
+        link.addEventListener('click', (event) => {
+            if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            if (sessionState.active) endSession(false);
+            switchToTrackMode(link.dataset.mode);
+            document.getElementById('exerciseTitle')?.scrollIntoView({ block: 'nearest' });
+        });
+    });
+    window.addEventListener('popstate', () => {
+        if (sessionState.active) endSession(false);
+        applyPracticeRoute();
+        loadWords();
+        resetMode();
+        updateDisplay();
+    });
+    window.addEventListener('pagehide', () => {
+        resetMode();
+        if (sessionState.active) endSession(false);
+    });
     // Master Track Hub Cards (3 Rutas)
     document.getElementById('trackHub')?.addEventListener('click', (e) => {
         const card = e.target.closest('.track-card');
@@ -2937,7 +3001,7 @@ function setupEventListeners() {
     document.getElementById('dictSubmit')?.addEventListener('click', checkDictation);
     document.getElementById('dictNextBtn')?.addEventListener('click', () => {
         pickDictationWord();
-        speakDictation();
+        if (automaticAudioEnabled()) speakDictation();
     });
     document.getElementById('dictInput')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') checkDictation();
@@ -2988,8 +3052,7 @@ function setupEventListeners() {
     // Train Loop Words button in Profile
     document.getElementById('trainLoopBtn')?.addEventListener('click', () => {
         closeProfile();
-        const loopBtn = document.getElementById('loopFilterBtn');
-        if (loopBtn) loopBtn.click();
+        selectCategory('loop');
     });
 
     // Reset Progress
@@ -3014,7 +3077,9 @@ function setupEventListeners() {
 
     // Global Keyboard Shortcuts
     document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { closeProfile(); return; }
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+        if (e.target.closest('button, a, [role="button"]') && e.code === 'Space' && e.target !== el.flashcard) return;
 
         if (state.currentMode === 'flashcard') {
             if (e.code === 'Space') {

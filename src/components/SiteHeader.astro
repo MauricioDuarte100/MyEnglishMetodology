@@ -1,0 +1,15 @@
+---
+const path = Astro.url.pathname;
+const links = [
+  { href: '/', label: 'Inicio', active: path === '/' },
+  { href: '/practica', label: 'Práctica', active: path.startsWith('/practica') },
+  { href: '/biblioteca', label: 'Biblioteca', active: path.startsWith('/biblioteca') },
+  { href: '/progreso', label: 'Mi progreso', active: path.startsWith('/progreso') },
+];
+---
+<header class="site-header">
+  <a href="/" class="site-brand" aria-label="VOCAB, inicio"><span class="brand-mark">v.</span><span>VOCAB<small>Inglés intensivo · práctica activa</small></span></a>
+  <nav class="site-nav" aria-label="Navegación principal">
+    {links.map(link => <a href={link.href} aria-current={link.active ? 'page' : undefined}>{link.label}</a>)}
+  </nav>
+</header>

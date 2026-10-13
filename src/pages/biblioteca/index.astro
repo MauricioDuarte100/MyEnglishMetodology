@@ -1,0 +1,8 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import { libraryPages } from '../../data/navigation.js';
+---
+<SiteLayout title="Biblioteca">
+  <div class="page-intro"><span class="eyebrow">APOYO PARA TU APRENDIZAJE</span><h1>Todo lo que acompaña tu práctica.</h1><p>Guías, sonidos y materiales en un lugar. Consulta lo que necesites y vuelve a practicar.</p></div>
+  <div class="library-grid">{libraryPages.map((page, i) => <a class="library-card" href={`/biblioteca/${page.slug}`}><span class="exercise-number">0{i + 1}</span><h2>{page.title}</h2><p>{page.description}</p><span class="text-link">Explorar →</span></a>)}</div>
+</SiteLayout>
