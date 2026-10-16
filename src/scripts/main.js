@@ -2867,7 +2867,22 @@ function setupEventListeners() {
     }
 
     // Grammar Anti-Translation Engine Listeners
-    // Grammar Anti-Translation Engine Listeners
+    let grammarVoiceRequest = 0;
+    async function playGrammarVoice(text) {
+        const request = ++grammarVoiceRequest;
+        const status = document.getElementById('grammarVoiceStatus');
+        if (status) status.textContent = 'Preparando voz natural…';
+        const onAudioState = (event) => {
+            if (status && request === grammarVoiceRequest && event.detail?.status === 'playing' && event.detail?.source === 'neural') {
+                status.textContent = '';
+            }
+        };
+        document.addEventListener('vocab:audio', onAudioState);
+        const result = await speakText(text, { provider: 'gemini', neuralOnly: true, timeoutMs: 12000 });
+        document.removeEventListener('vocab:audio', onAudioState);
+        if (request !== grammarVoiceRequest || !status) return;
+        status.textContent = result === 'error' ? 'La voz natural no está disponible ahora. Intenta de nuevo.' : '';
+    }
     document.getElementById('grammarCategoryFilter')?.addEventListener('change', (e) => {
         grammarState.categoryFilter = e.target.value;
         grammarState.currentIndex = 0;
@@ -2905,12 +2920,16 @@ function setupEventListeners() {
 
     document.getElementById('grammarAudioBtn')?.addEventListener('click', () => {
         const item = grammarState.filteredItems[grammarState.currentIndex];
-        if (item) speakText(item.english);
+        if (item) playGrammarVoice(item.english);
     });
 
     document.getElementById('grammarAudioVerbBtn')?.addEventListener('click', () => {
         const item = grammarState.filteredItems[grammarState.currentIndex];
-        if (item) speakText(`${item.keyVerb.base}. ${item.keyVerb.past}. ${item.keyVerb.pastParticiple}. ${item.keyVerb.gerund || ''}`);
+        if (!item) return;
+        const { base, past, pastParticiple, gerund } = item.keyVerb;
+        const forms = [`Base form: ${base}.`, `Past: ${past}.`, `Past participle: ${pastParticiple}.`];
+        if (gerund) forms.push(`Present participle: ${gerund}.`);
+        playGrammarVoice(forms.join(' '));
     });
 
     // Scenario Simulator Selection & Next Step

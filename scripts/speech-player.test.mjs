@@ -54,6 +54,20 @@ test('a slow request falls back once and ignores its eventual audio', async () =
     await h.completeRequest(0, 'late'); assert.equal(h.played.length, 0);
     h.voices[0].onend(); assert.equal(await play, 'ended'); h.player.dispose();
 });
+
+test('grammar playback keeps the neural voice or reports an error without a robotic fallback', async () => {
+    const slow = harness({ timeoutMs: 15 });
+    const pending = slow.player.play('I have worked here.', { neuralOnly: true });
+    assert.equal(await pending, 'error');
+    assert.equal(slow.voices.length, 0);
+    assert.equal(slow.requests[0].init.signal.aborted, true);
+
+    const failedAudio = harness({ rejectPlay: true });
+    const playback = failedAudio.player.play('I have worked here.', { neuralOnly: true });
+    await failedAudio.completeRequest(0, 'sentence');
+    assert.equal(await playback, 'error');
+    assert.equal(failedAudio.voices.length, 0);
+});
 test('unavailable voices do not create a delayed voiceschanged handler', async () => {
     const h = harness(); const play = h.player.play('fallback'); h.requests[0].reject(new Error('offline'));
     await new Promise(resolve => setImmediate(resolve));

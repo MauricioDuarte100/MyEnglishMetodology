@@ -30,10 +30,13 @@ export function createSpeechPlayer(env = globalThis, { timeoutMs = 4500, cacheLi
         const id = generation;
         const current = () => generation === id && audible();
         const rate = Math.max(0.5, Math.min(1.5, Number(options.rate) || 1));
+        const neuralOnly = options.neuralOnly === true;
+        const requestTimeoutMs = options.timeoutMs ?? timeoutMs;
         const voice = options.voice || 'en-US-JennyNeural';
         const percent = Math.round((rate - 1) * 100);
         const rateString = `${percent >= 0 ? '+' : ''}${percent}%`;
-        const key = `${voice}|${rateString}|${clean}`;
+        const provider = options.provider || 'edge';
+        const key = `${provider}|${voice}|${rateString}|${clean}`;
 
         return new Promise(resolve => {
             let finished = false;
@@ -74,7 +77,8 @@ export function createSpeechPlayer(env = globalThis, { timeoutMs = 4500, cacheLi
                     if (fallbackUsed || !current() || finished) return;
                     fallbackUsed = true;
                     if (audio) { audio.onended = audio.onerror = null; audio.pause(); audio = null; }
-                    browserVoice();
+                    if (neuralOnly) finish('error');
+                    else browserVoice();
                 };
                 try {
                     audio = new env.Audio(url);
@@ -101,11 +105,12 @@ export function createSpeechPlayer(env = globalThis, { timeoutMs = 4500, cacheLi
                 if (!current() || finished) return;
                 request.abort();
                 clearTimer();
-                browserVoice();
-            }, timeoutMs);
+                if (neuralOnly) finish('error');
+                else browserVoice();
+            }, requestTimeoutMs);
             env.fetch('/api/tts', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: request.signal,
-                body: JSON.stringify({ text: clean, voice, rate: rateString }),
+                body: JSON.stringify({ text: clean, voice, rate: rateString, provider }),
             }).then(async response => {
                 if (!response.ok) throw new Error('TTS unavailable');
                 const blob = await response.blob();
@@ -121,7 +126,9 @@ export function createSpeechPlayer(env = globalThis, { timeoutMs = 4500, cacheLi
                 playUrl(url);
             }).catch(() => {
                 if (!current() || finished || request.signal.aborted) return;
-                clearTimer(); browserVoice();
+                clearTimer();
+                if (neuralOnly) finish('error');
+                else browserVoice();
             });
         });
     }
