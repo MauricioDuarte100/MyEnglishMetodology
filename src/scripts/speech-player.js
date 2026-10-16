@@ -1,9 +1,14 @@
 // One voice channel. Superseded requests and callbacks never regain playback.
-export function createSpeechPlayer(env = globalThis, { timeoutMs = 4500, cacheLimit = 40, onState = () => {} } = {}) {
+function defaultLocalWorker() {
+    return new Worker(new URL('./kokoro-worker.js', import.meta.url), { type: 'module' });
+}
+
+export function createSpeechPlayer(env = globalThis, { timeoutMs = 4500, cacheLimit = 40, onState = () => {}, workerFactory = defaultLocalWorker } = {}) {
     let generation = 0;
     let controller = null;
     let audio = null;
     let utterance = null;
+    let localWorker = null;
     let settle = null;
     let timer = null;
     const cache = new Map();
@@ -70,7 +75,7 @@ export function createSpeechPlayer(env = globalThis, { timeoutMs = 4500, cacheLi
                 onState({ status: 'playing', source: 'browser', text: clean });
                 try { env.speechSynthesis.speak(utterance); } catch { finish('error'); }
             }
-            function playUrl(url) {
+            function playUrl(url, source = 'neural') {
                 if (!current() || finished) return;
                 let fallbackUsed = false;
                 const fallback = () => {
@@ -84,7 +89,7 @@ export function createSpeechPlayer(env = globalThis, { timeoutMs = 4500, cacheLi
                     audio = new env.Audio(url);
                     audio.onended = () => { if (current()) finish('ended'); };
                     audio.onerror = fallback;
-                    onState({ status: 'playing', source: 'neural', text: clean });
+                    onState({ status: 'playing', source, text: clean });
                     Promise.resolve(audio.play()).catch(error => {
                         if (!current() || finished) return;
                         if (error.name === 'NotAllowedError') finish('error');
@@ -95,10 +100,34 @@ export function createSpeechPlayer(env = globalThis, { timeoutMs = 4500, cacheLi
             if (cache.has(key)) {
                 const url = cache.get(key);
                 cache.delete(key); cache.set(key, url);
-                playUrl(url);
+                playUrl(url, provider === 'kokoro' ? 'local' : 'neural');
                 return;
             }
             onState({ status: 'loading', text: clean });
+            if (provider === 'kokoro') {
+                try {
+                    localWorker ??= workerFactory();
+                    localWorker.onmessage = ({ data }) => {
+                        if (data.id !== id || !current() || finished) return;
+                        if (data.type === 'progress') {
+                            onState({ status: 'loading', source: 'local', progress: data.progress, text: clean });
+                        } else if (data.type === 'audio') {
+                            const url = env.URL.createObjectURL(data.blob);
+                            cache.set(key, url);
+                            if (cache.size > cacheLimit) {
+                                const oldest = cache.keys().next().value;
+                                env.URL.revokeObjectURL(cache.get(oldest)); cache.delete(oldest);
+                            }
+                            playUrl(url, 'local');
+                        } else if (data.type === 'error') {
+                            finish('error');
+                        }
+                    };
+                    localWorker.onerror = () => { if (current() && !finished) finish('error'); };
+                    localWorker.postMessage({ id, text: clean, rate });
+                } catch { finish('error'); }
+                return;
+            }
             controller = new env.AbortController();
             const request = controller;
             timer = env.setTimeout(() => {
@@ -133,7 +162,12 @@ export function createSpeechPlayer(env = globalThis, { timeoutMs = 4500, cacheLi
         });
     }
 
-    function dispose() { stop(); for (const url of cache.values()) env.URL.revokeObjectURL(url); cache.clear(); }
+    function dispose() {
+        stop();
+        localWorker?.terminate(); localWorker = null;
+        for (const url of cache.values()) env.URL.revokeObjectURL(url);
+        cache.clear();
+    }
     return { play, stop, dispose };
 }
 

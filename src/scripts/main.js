@@ -2871,17 +2871,20 @@ function setupEventListeners() {
     async function playGrammarVoice(text) {
         const request = ++grammarVoiceRequest;
         const status = document.getElementById('grammarVoiceStatus');
-        if (status) status.textContent = 'Preparando voz natural…';
+        if (status) status.textContent = 'Preparando voz natural local…';
         const onAudioState = (event) => {
-            if (status && request === grammarVoiceRequest && event.detail?.status === 'playing' && event.detail?.source === 'neural') {
+            if (!status || request !== grammarVoiceRequest) return;
+            if (event.detail?.status === 'loading' && event.detail?.source === 'local' && Number.isFinite(event.detail?.progress)) {
+                status.textContent = `Descargando voz natural: ${Math.round(event.detail.progress)} %`;
+            } else if (event.detail?.status === 'playing' && event.detail?.source === 'local') {
                 status.textContent = '';
             }
         };
         document.addEventListener('vocab:audio', onAudioState);
-        const result = await speakText(text, { provider: 'gemini', neuralOnly: true, timeoutMs: 12000 });
+        const result = await speakText(text, { provider: 'kokoro', neuralOnly: true });
         document.removeEventListener('vocab:audio', onAudioState);
         if (request !== grammarVoiceRequest || !status) return;
-        status.textContent = result === 'error' ? 'La voz natural no está disponible ahora. Intenta de nuevo.' : '';
+        status.textContent = result === 'error' ? 'Este dispositivo no pudo cargar la voz local. Prueba Chrome o Edge en una computadora.' : '';
     }
     document.getElementById('grammarCategoryFilter')?.addEventListener('change', (e) => {
         grammarState.categoryFilter = e.target.value;

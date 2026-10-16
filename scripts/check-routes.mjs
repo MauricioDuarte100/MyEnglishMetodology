@@ -40,8 +40,8 @@ for (const invalid of ['/practica/no-existe', '/practica/fundamentos/no-existe']
   assert.equal((await fetch(new URL(invalid, origin))).status, 404, `${invalid}: ruta desconocida`);
 }
 console.log(`${paths.length} páginas, ${internalPaths.size} destinos internos y 4 redirecciones verificados. Rutas desconocidas: 404.`);
-for (const body of [{ text: 123 }, { text: '' }, { text: '***' }, { text: 'hello', voice: 'invalid' }, { text: 'hello', rate: '+99%' }, { text: 'hello', rate: 1 }, { text: 'a'.repeat(2501) }]) {
+for (const body of [{ text: 123 }, { text: '' }, { text: '***' }, { text: 'hello', voice: 'invalid' }, { text: 'hello', rate: '+99%' }, { text: 'hello', rate: 1 }, { text: 'hello', provider: 'gemini' }, { text: 'a'.repeat(2501) }]) {
   const response = await fetch(new URL('/api/tts', origin), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   assert.equal(response.status, 400, 'La API de pronunciación debe rechazar parámetros inválidos');
 }
-console.log('Pronunciación: 7 casos de entrada inválida rechazados correctamente.');
+console.log('Pronunciación: 8 casos de entrada inválida rechazados correctamente.');

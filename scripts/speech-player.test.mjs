@@ -68,6 +68,24 @@ test('grammar playback keeps the neural voice or reports an error without a robo
     assert.equal(await playback, 'error');
     assert.equal(failedAudio.voices.length, 0);
 });
+
+test('local neural speech never calls the paid TTS endpoint and ignores superseded clips', async () => {
+    const h = harness();
+    const posted = [];
+    const worker = { postMessage: message => posted.push(message), terminate() {} };
+    const player = createSpeechPlayer(h.env, { workerFactory: () => worker });
+    const first = player.play('first', { provider: 'kokoro', neuralOnly: true });
+    const second = player.play('second', { provider: 'kokoro', neuralOnly: true });
+    assert.equal(await first, 'cancelled');
+    assert.equal(h.requests.length, 0);
+    worker.onmessage({ data: { id: posted[0].id, type: 'audio', blob: { name: 'old' } } });
+    assert.equal(h.played.length, 0);
+    worker.onmessage({ data: { id: posted[1].id, type: 'audio', blob: { name: 'new' } } });
+    assert.deepEqual(h.played.map(audio => audio.url), ['blob:new']);
+    h.played[0].onended();
+    assert.equal(await second, 'ended');
+    player.dispose();
+});
 test('unavailable voices do not create a delayed voiceschanged handler', async () => {
     const h = harness(); const play = h.player.play('fallback'); h.requests[0].reject(new Error('offline'));
     await new Promise(resolve => setImmediate(resolve));

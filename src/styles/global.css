@@ -3727,6 +3727,12 @@ body {
   font-size: 0.85rem;
 }
 
+.grammar-voice-note {
+  margin: 0;
+  color: var(--text-muted, #aab8c4);
+  font-size: 0.8rem;
+}
+
 /* ===== Cyber Arena Arcade (Tiffany Black & White Edition) Styles ===== */
 
 /* High-Impact Top Hero Banner for Instant Arcade Access */
